@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
 import SetupForm from "./SetupForm"
 
+export const dynamic = "force-dynamic"
 export const metadata = { title: "Setup — Expense Tracker" }
 
 export default async function SetupPage() {

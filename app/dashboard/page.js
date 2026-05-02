@@ -1,6 +1,7 @@
 // app/dashboard/page.js
 import { auth } from "@/auth"
 
+export const dynamic = "force-dynamic"
 export const metadata = { title: "Dashboard — Expense Tracker" }
 
 export default async function DashboardPage() {

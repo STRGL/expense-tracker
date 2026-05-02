@@ -4,6 +4,7 @@ import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import LoginForm from "./LoginForm"
 
+export const dynamic = "force-dynamic"
 export const metadata = { title: "Sign in — Expense Tracker" }
 
 export default async function LoginPage() {
