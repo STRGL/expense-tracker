@@ -1,0 +1,166 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String    @id @default(cuid())
+  name            String
+  email           String    @unique
+  passwordHash    String
+  role            String    @default("user")
+  wage            Float?
+  dashboardConfig String?
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  transactionsCreated   Transaction[]     @relation("TransactionCreator")
+  splits                TransactionSplit[]
+  notificationsReceived Notification[]    @relation("NotificationRecipient")
+  suggestionsFrom       SplitSuggestion[] @relation("SuggestionFrom")
+  suggestionsTo         SplitSuggestion[] @relation("SuggestionTo")
+  tags                  Tag[]
+  merchantAliases       MerchantAlias[]
+  importRules           ImportRule[]
+  importBatches         ImportBatch[]
+}
+
+model Transaction {
+  id            String    @id @default(cuid())
+  date          DateTime
+  merchantRaw   String
+  merchantName  String
+  totalAmount   Float
+  notes         String?
+  createdById   String
+  importBatchId String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  createdBy     User              @relation("TransactionCreator", fields: [createdById], references: [id])
+  importBatch   ImportBatch?      @relation(fields: [importBatchId], references: [id])
+  splits        TransactionSplit[]
+  notifications Notification[]
+  suggestions   SplitSuggestion[]
+}
+
+model TransactionSplit {
+  id            String    @id @default(cuid())
+  transactionId String
+  userId        String
+  amount        Float
+  splitMethod   String
+  tagId         String?
+  status        String    @default("active")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id])
+  tag         Tag?        @relation(fields: [tagId], references: [id])
+}
+
+model Tag {
+  id          String    @id @default(cuid())
+  name        String
+  colour      String    @default("#6b7280")
+  parentId    String?
+  isShared    Boolean   @default(true)
+  createdById String?
+  createdAt   DateTime  @default(now())
+
+  createdBy   User?             @relation(fields: [createdById], references: [id])
+  parent      Tag?              @relation("TagHierarchy", fields: [parentId], references: [id])
+  children    Tag[]             @relation("TagHierarchy")
+  splits      TransactionSplit[]
+  importRules ImportRule[]
+}
+
+model MerchantAlias {
+  id          String    @id @default(cuid())
+  rawName     String
+  niceName    String
+  isShared    Boolean   @default(true)
+  createdById String
+  createdAt   DateTime  @default(now())
+
+  createdBy User @relation(fields: [createdById], references: [id])
+}
+
+model ImportRule {
+  id              String    @id @default(cuid())
+  merchantPattern String
+  tagId           String
+  isShared        Boolean   @default(true)
+  createdById     String
+  createdAt       DateTime  @default(now())
+
+  createdBy User @relation(fields: [createdById], references: [id])
+  tag       Tag  @relation(fields: [tagId], references: [id])
+}
+
+model ImportBatch {
+  id            String    @id @default(cuid())
+  uploadedById  String
+  fileName      String
+  bankName      String?
+  columnMapping String?
+  status        String    @default("pending")
+  createdAt     DateTime  @default(now())
+  confirmedAt   DateTime?
+
+  uploadedBy   User          @relation(fields: [uploadedById], references: [id])
+  rows         ImportRow[]
+  transactions Transaction[]
+}
+
+model ImportRow {
+  id                String    @id @default(cuid())
+  batchId           String
+  rawData           String
+  date              DateTime?
+  merchantRaw       String?
+  merchantResolved  String?
+  amount            Float?
+  tagId             String?
+  splitData         String?
+  confidenceLevel   String    @default("green")
+  confidenceReasons String?
+  isDuplicate       Boolean   @default(false)
+  status            String    @default("pending")
+
+  batch ImportBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id            String    @id @default(cuid())
+  userId        String
+  transactionId String?
+  type          String
+  message       String?
+  read          Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+
+  user        User         @relation("NotificationRecipient", fields: [userId], references: [id])
+  transaction Transaction? @relation(fields: [transactionId], references: [id])
+}
+
+model SplitSuggestion {
+  id               String    @id @default(cuid())
+  transactionId    String
+  fromUserId       String
+  toUserId         String
+  suggestedChanges String
+  status           String    @default("pending")
+  createdAt        DateTime  @default(now())
+  resolvedAt       DateTime?
+
+  transaction Transaction @relation(fields: [transactionId], references: [id])
+  fromUser    User        @relation("SuggestionFrom", fields: [fromUserId], references: [id])
+  toUser      User        @relation("SuggestionTo", fields: [toUserId], references: [id])
+}
