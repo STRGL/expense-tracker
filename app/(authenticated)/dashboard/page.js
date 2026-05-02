@@ -1,4 +1,4 @@
-// app/dashboard/page.js
+// app/(authenticated)/dashboard/page.js
 import { auth } from "@/auth"
 
 export const dynamic = "force-dynamic"
@@ -11,7 +11,7 @@ export default async function DashboardPage() {
     <div>
       <h1 className="text-2xl font-semibold tracking-tight mb-1">Dashboard</h1>
       <p className="text-muted-foreground text-sm">
-        Welcome back, {session.user.name}. Dashboard charts and widgets will appear here in a future update.
+        Welcome back, {session.user.name}. Dashboard charts and widgets will appear here in Plan 6.
       </p>
     </div>
   )
