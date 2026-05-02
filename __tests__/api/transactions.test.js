@@ -2,12 +2,25 @@
  * @jest-environment node
  */
 import { GET, POST } from "@/app/api/transactions/route"
+import { GET as GET_DETAIL, PUT, DELETE } from "@/app/api/transactions/[id]/route"
+import { PUT as PUT_MY_SPLIT } from "@/app/api/transactions/[id]/my-split/route"
 
 jest.mock("@/auth", () => ({ auth: jest.fn() }))
 jest.mock("@/lib/prisma", () => ({
   prisma: {
-    transactionSplit: { findMany: jest.fn() },
-    transaction: { create: jest.fn() },
+    transactionSplit: {
+      findMany: jest.fn(),
+      findFirst: jest.fn(),
+      update: jest.fn(),
+      deleteMany: jest.fn(),
+    },
+    transaction: {
+      create: jest.fn(),
+      findUnique: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+    },
+    notification: { create: jest.fn() },
     $transaction: jest.fn(),
   },
 }))
@@ -124,5 +137,104 @@ describe("POST /api/transactions", () => {
     })
     const res = await POST(req)
     expect(res.status).toBe(201)
+  })
+})
+
+describe("GET /api/transactions/[id]", () => {
+  beforeEach(() => jest.clearAllMocks())
+
+  it("returns 401 when not authenticated", async () => {
+    auth.mockResolvedValue(null)
+    const req = new Request("http://localhost/api/transactions/tx1")
+    const res = await GET_DETAIL(req, { params: Promise.resolve({ id: "tx1" }) })
+    expect(res.status).toBe(401)
+  })
+
+  it("returns 404 when transaction not found", async () => {
+    auth.mockResolvedValue(session)
+    prisma.transaction.findUnique.mockResolvedValue(null)
+    const req = new Request("http://localhost/api/transactions/tx1")
+    const res = await GET_DETAIL(req, { params: Promise.resolve({ id: "tx1" }) })
+    expect(res.status).toBe(404)
+  })
+
+  it("returns 403 when user has no split in transaction", async () => {
+    auth.mockResolvedValue(session)
+    prisma.transaction.findUnique.mockResolvedValue({
+      id: "tx1",
+      createdById: "other",
+      splits: [],
+    })
+    const req = new Request("http://localhost/api/transactions/tx1")
+    const res = await GET_DETAIL(req, { params: Promise.resolve({ id: "tx1" }) })
+    expect(res.status).toBe(403)
+  })
+})
+
+describe("PUT /api/transactions/[id]", () => {
+  beforeEach(() => jest.clearAllMocks())
+
+  it("returns 403 when user is not the owner", async () => {
+    auth.mockResolvedValue(session)
+    prisma.transaction.findUnique.mockResolvedValue({
+      id: "tx1",
+      createdById: "other",
+      splits: [],
+    })
+    const req = new Request("http://localhost/api/transactions/tx1", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ merchantName: "Updated" }),
+    })
+    const res = await PUT(req, { params: Promise.resolve({ id: "tx1" }) })
+    expect(res.status).toBe(403)
+  })
+})
+
+describe("DELETE /api/transactions/[id]", () => {
+  beforeEach(() => jest.clearAllMocks())
+
+  it("returns 403 when user is not the owner", async () => {
+    auth.mockResolvedValue(session)
+    prisma.transaction.findUnique.mockResolvedValue({
+      id: "tx1",
+      createdById: "other",
+      splits: [],
+    })
+    const req = new Request("http://localhost/api/transactions/tx1", { method: "DELETE" })
+    const res = await DELETE(req, { params: Promise.resolve({ id: "tx1" }) })
+    expect(res.status).toBe(403)
+  })
+})
+
+describe("PUT /api/transactions/[id]/my-split", () => {
+  beforeEach(() => jest.clearAllMocks())
+
+  it("returns 404 when user has no active split", async () => {
+    auth.mockResolvedValue(session)
+    prisma.transactionSplit.findFirst.mockResolvedValue(null)
+    const req = new Request("http://localhost/api/transactions/tx1/my-split", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tagId: "t1" }),
+    })
+    const res = await PUT_MY_SPLIT(req, { params: Promise.resolve({ id: "tx1" }) })
+    expect(res.status).toBe(404)
+  })
+
+  it("updates the tag on the user's split", async () => {
+    auth.mockResolvedValue(session)
+    prisma.transactionSplit.findFirst.mockResolvedValue({ id: "sp1", userId: "u1" })
+    prisma.transactionSplit.update.mockResolvedValue({ id: "sp1", tagId: "t1" })
+    const req = new Request("http://localhost/api/transactions/tx1/my-split", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tagId: "t1" }),
+    })
+    const res = await PUT_MY_SPLIT(req, { params: Promise.resolve({ id: "tx1" }) })
+    expect(res.status).toBe(200)
+    expect(prisma.transactionSplit.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { tagId: "t1" } })
+    )
   })
 })
