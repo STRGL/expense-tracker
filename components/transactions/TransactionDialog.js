@@ -1,4 +1,233 @@
+// components/transactions/TransactionDialog.js
 "use client"
-export default function TransactionDialog({ onClose }) {
-  return null
+
+import { useState, useEffect } from "react"
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Label } from "@/components/ui/label"
+import TransactionForm from "./TransactionForm"
+
+function formatDate(dateStr) {
+  return new Date(dateStr).toLocaleDateString("en-GB", {
+    day: "2-digit", month: "short", year: "numeric",
+  })
+}
+
+function formatAmount(amount) {
+  return new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(amount)
+}
+
+export default function TransactionDialog({ transaction, onClose, onSaved }) {
+  const [detail, setDetail] = useState(null)
+  const [userId, setUserId] = useState(null)
+  const [mode, setMode] = useState("view") // "view" | "edit"
+  const [tags, setTags] = useState([])
+  const [myTagId, setMyTagId] = useState(transaction?.myTagId ?? null)
+  const [savingTag, setSavingTag] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+
+  useEffect(() => {
+    if (!transaction) return
+    Promise.all([
+      fetch(`/api/transactions/${transaction.id}`).then((r) => r.json()),
+      fetch("/api/profile").then((r) => r.json()),
+      fetch("/api/tags").then((r) => r.json()),
+    ]).then(([det, profile, tagTree]) => {
+      setDetail(det)
+      setUserId(profile.id)
+      setMyTagId(det.mySplit?.tagId ?? null)
+      const flat = []
+      for (const parent of tagTree) {
+        flat.push(parent)
+        for (const child of parent.children) flat.push(child)
+      }
+      setTags(flat)
+    })
+  }, [transaction])
+
+  async function handleTagSave() {
+    setSavingTag(true)
+    await fetch(`/api/transactions/${transaction.id}/my-split`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tagId: myTagId }),
+    })
+    setSavingTag(false)
+    onSaved?.()
+  }
+
+  async function handleDelete() {
+    if (!confirm("Delete this transaction? This cannot be undone.")) return
+    setDeleting(true)
+    await fetch(`/api/transactions/${transaction.id}`, { method: "DELETE" })
+    setDeleting(false)
+    onSaved?.()
+  }
+
+  if (!detail || !userId) {
+    return (
+      <Dialog open onOpenChange={onClose}>
+        <DialogContent>
+          <p className="text-sm text-muted-foreground py-8 text-center">Loading...</p>
+        </DialogContent>
+      </Dialog>
+    )
+  }
+
+  const isOwner = detail.isOwner
+
+  if (isOwner && mode === "edit") {
+    return (
+      <Dialog open onOpenChange={onClose}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit transaction</DialogTitle>
+          </DialogHeader>
+          <TransactionForm
+            initial={{ ...detail, splits: detail.splits }}
+            currentUserId={userId}
+            onSaved={onSaved}
+            onCancel={() => setMode("view")}
+          />
+        </DialogContent>
+      </Dialog>
+    )
+  }
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            {detail.merchantName}
+            {!isOwner && (
+              <Badge variant="outline" className="text-xs font-normal">Shared with you</Badge>
+            )}
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-3 py-1">
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div>
+              <p className="text-xs text-muted-foreground mb-0.5">Date</p>
+              <p className="font-medium">{formatDate(detail.date)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground mb-0.5">Total amount</p>
+              <p className="font-medium">{formatAmount(detail.totalAmount)}</p>
+            </div>
+          </div>
+
+          {detail.merchantRaw !== detail.merchantName && (
+            <div className="text-sm">
+              <p className="text-xs text-muted-foreground mb-0.5">Raw merchant name</p>
+              <p className="font-mono text-xs text-muted-foreground">{detail.merchantRaw}</p>
+            </div>
+          )}
+
+          {detail.notes && (
+            <div className="text-sm">
+              <p className="text-xs text-muted-foreground mb-0.5">Notes</p>
+              <p>{detail.notes}</p>
+            </div>
+          )}
+
+          {detail.splits.length > 0 && (
+            <div>
+              <p className="text-xs text-muted-foreground mb-1.5">Split</p>
+              <div className="space-y-1 text-sm">
+                {detail.splits.map((s) => (
+                  <div key={s.id} className="flex justify-between">
+                    <span className={s.userId === userId ? "font-medium" : "text-muted-foreground"}>
+                      {s.userId === userId ? "You" : s.userId}
+                    </span>
+                    <span className="tabular-nums">{formatAmount(s.amount)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <Separator />
+
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Your tag for this transaction</Label>
+            <Select
+              value={myTagId ?? "none"}
+              onValueChange={(v) => setMyTagId(v === "none" ? null : v)}
+            >
+              <SelectTrigger className="h-8 text-sm">
+                <SelectValue placeholder="Untagged" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Untagged</SelectItem>
+                {tags.map((t) => (
+                  <SelectItem key={t.id} value={t.id}>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: t.colour }}
+                      />
+                      {t.parentId ? "  " : ""}{t.name}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {!isOwner && (
+            <div className="space-y-1.5">
+              <p className="text-xs text-muted-foreground">Dispute this split</p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-xs"
+                  onClick={() => alert("Decline flow coming in a future update.")}
+                >
+                  Decline
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-xs"
+                  onClick={() => alert("Suggest a change coming in a future update.")}
+                >
+                  Suggest a change
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <DialogFooter className="gap-2">
+          {isOwner && (
+            <>
+              <Button
+                variant="destructive"
+                size="sm"
+                className="mr-auto"
+                onClick={handleDelete}
+                disabled={deleting}
+              >
+                {deleting ? "Deleting..." : "Delete"}
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setMode("edit")}>
+                Edit
+              </Button>
+            </>
+          )}
+          <Button size="sm" onClick={handleTagSave} disabled={savingTag}>
+            {savingTag ? "Saving..." : "Save tag"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
 }
