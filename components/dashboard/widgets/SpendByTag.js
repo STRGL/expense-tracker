@@ -1,0 +1,105 @@
+"use client"
+
+import { useState } from "react"
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts"
+import WidgetContainer from "../WidgetContainer"
+
+const COLOURS = ["#f97316", "#3b82f6", "#22c55e", "#8b5cf6", "#ec4899", "#eab308", "#6b7280", "#ef4444"]
+
+function formatAmount(n) {
+  return new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 }).format(n)
+}
+
+function CustomTooltip({ active, payload }) {
+  if (!active || !payload?.length) return null
+  const { name, value } = payload[0]
+  return (
+    <div className="bg-background border rounded-md px-2 py-1.5 text-xs shadow">
+      <p className="font-medium">{name}</p>
+      <p>{formatAmount(value)}</p>
+    </div>
+  )
+}
+
+export default function SpendByTag({ data, chartType = "donut" }) {
+  const [drillTarget, setDrillTarget] = useState(null)
+
+  const allTags = data?.spendByTag ?? []
+  const empty = allTags.length === 0
+
+  const topLevel = allTags.filter(t => !t.parentId)
+  const chartData = (drillTarget
+    ? allTags.filter(t => t.parentId === drillTarget)
+    : topLevel
+  ).map((t, i) => ({
+    name: t.tagName,
+    value: Math.round(t.amount * 100) / 100,
+    fill: t.colour ?? COLOURS[i % COLOURS.length],
+    tagId: t.tagId,
+  }))
+
+  const drillLabel = drillTarget
+    ? topLevel.find(t => t.tagId === drillTarget)?.tagName ?? ""
+    : null
+
+  return (
+    <WidgetContainer title={drillLabel ? `Spending — ${drillLabel}` : "Spending by tag"} empty={empty} insufficient={false}>
+      <div className="flex flex-col h-full">
+        {drillTarget && (
+          <button
+            className="text-xs text-muted-foreground hover:text-foreground mb-1 text-left"
+            onClick={() => setDrillTarget(null)}
+          >
+            ← Back to categories
+          </button>
+        )}
+
+        <div className="flex-1 min-h-0">
+          {chartType === "bar" ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData} margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
+                <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `£${v}`} />
+                <Tooltip content={<CustomTooltip />} />
+                <Bar dataKey="value" onClick={d => { if (!drillTarget) setDrillTarget(d.tagId) }}>
+                  {chartData.map((entry) => (
+                    <Cell key={entry.name} fill={entry.fill} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={chartData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={chartType === "donut" ? "50%" : 0}
+                  outerRadius="80%"
+                  dataKey="value"
+                  onClick={d => { if (!drillTarget) setDrillTarget(d.tagId) }}
+                  style={{ cursor: drillTarget ? "default" : "pointer" }}
+                >
+                  {chartData.map((entry) => (
+                    <Cell key={entry.name} fill={entry.fill} />
+                  ))}
+                </Pie>
+                <Tooltip content={<CustomTooltip />} />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+
+        <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 shrink-0">
+          {chartData.map((d) => (
+            <div key={d.name} className="flex items-center gap-1 text-xs">
+              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: d.fill }} />
+              <span className="text-muted-foreground truncate max-w-[80px]">{d.name}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </WidgetContainer>
+  )
+}

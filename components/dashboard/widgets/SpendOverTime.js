@@ -1,0 +1,54 @@
+// "use client" required — Recharts uses browser APIs
+"use client"
+
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts"
+import WidgetContainer from "../WidgetContainer"
+
+function formatAmount(n) {
+  return new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 }).format(n)
+}
+
+function formatPeriod(p) {
+  const [y, m] = p.split("-")
+  return new Date(parseInt(y), parseInt(m) - 1, 1).toLocaleDateString("en-GB", { month: "short", year: "2-digit" })
+}
+
+function CustomTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null
+  return (
+    <div className="bg-background border rounded-md px-2 py-1.5 text-xs shadow">
+      <p className="font-medium">{formatPeriod(label)}</p>
+      <p>{formatAmount(payload[0].value)}</p>
+    </div>
+  )
+}
+
+export default function SpendOverTime({ data, chartType = "bar" }) {
+  const rawData = data?.spendOverTime ?? []
+  const empty = rawData.length === 0
+  const chartData = rawData.map(d => ({ period: d.period, amount: Math.round(d.amount * 100) / 100 }))
+
+  return (
+    <WidgetContainer title="Spending over time" empty={empty} insufficient={false}>
+      <ResponsiveContainer width="100%" height="100%">
+        {chartType === "line" ? (
+          <LineChart data={chartData} margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+            <XAxis dataKey="period" tickFormatter={formatPeriod} tick={{ fontSize: 10 }} />
+            <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `£${v}`} />
+            <Tooltip content={<CustomTooltip />} />
+            <Line type="monotone" dataKey="amount" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+          </LineChart>
+        ) : (
+          <BarChart data={chartData} margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+            <XAxis dataKey="period" tickFormatter={formatPeriod} tick={{ fontSize: 10 }} />
+            <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `£${v}`} />
+            <Tooltip content={<CustomTooltip />} />
+            <Bar dataKey="amount" fill="hsl(var(--primary))" radius={[2, 2, 0, 0]} />
+          </BarChart>
+        )}
+      </ResponsiveContainer>
+    </WidgetContainer>
+  )
+}
