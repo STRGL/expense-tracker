@@ -1,9 +1,8 @@
 // components/layout/Header.js
 import Breadcrumbs from "./Breadcrumbs"
-import { Bell, Search } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Search } from "lucide-react"
 import { Input } from "@/components/ui/input"
-import Link from "next/link"
+import NotificationBell from "./NotificationBell"
 
 export default function Header() {
   return (
@@ -22,12 +21,7 @@ export default function Header() {
           />
         </div>
 
-        <Button variant="ghost" size="icon" className="relative" asChild>
-          <Link href="/notifications">
-            <Bell className="h-4 w-4" />
-            <span className="sr-only">Notifications</span>
-          </Link>
-        </Button>
+        <NotificationBell />
       </div>
     </header>
   )
