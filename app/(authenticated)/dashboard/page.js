@@ -1,18 +1,17 @@
 // app/(authenticated)/dashboard/page.js
-import { auth } from "@/auth"
-
 export const dynamic = "force-dynamic"
 export const metadata = { title: "Dashboard — Expense Tracker" }
 
-export default async function DashboardPage() {
-  const session = await auth()
+import DashboardShell from "@/components/dashboard/DashboardShell"
 
+export default function DashboardPage() {
   return (
-    <div>
-      <h1 className="text-2xl font-semibold tracking-tight mb-1">Dashboard</h1>
-      <p className="text-muted-foreground text-sm">
-        Welcome back, {session.user.name}. Dashboard charts and widgets will appear here in Plan 6.
-      </p>
+    <div className="space-y-4">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
+        <p className="text-muted-foreground text-sm mt-0.5">Your spending at a glance</p>
+      </div>
+      <DashboardShell />
     </div>
   )
 }

@@ -2,11 +2,9 @@
 "use client"
 
 import { useCallback } from "react"
-import { Responsive, WidthProvider } from "react-grid-layout"
+import { ResponsiveGridLayout } from "react-grid-layout"
 import "react-grid-layout/css/styles.css"
 import "react-resizable/css/styles.css"
-
-const ResponsiveGrid = WidthProvider(Responsive)
 
 export default function WidgetGrid({ layout, locked, onLayoutChange, children }) {
   const handleChange = useCallback((newLayout) => {
@@ -14,7 +12,7 @@ export default function WidgetGrid({ layout, locked, onLayoutChange, children })
   }, [locked, onLayoutChange])
 
   return (
-    <ResponsiveGrid
+    <ResponsiveGridLayout
       className="layout"
       layouts={{ lg: layout }}
       breakpoints={{ lg: 1200, md: 768 }}
@@ -26,6 +24,6 @@ export default function WidgetGrid({ layout, locked, onLayoutChange, children })
       margin={[12, 12]}
     >
       {children}
-    </ResponsiveGrid>
+    </ResponsiveGridLayout>
   )
 }
