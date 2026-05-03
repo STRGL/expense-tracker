@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import TransactionForm from "./TransactionForm"
+import SuggestChangeForm from "./SuggestChangeForm"
 
 function formatDate(dateStr) {
   return new Date(dateStr).toLocaleDateString("en-GB", {
@@ -30,6 +31,8 @@ export default function TransactionDialog({ transaction, onClose, onSaved }) {
   const [myTagId, setMyTagId] = useState(transaction?.myTagId ?? null)
   const [savingTag, setSavingTag] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [declining, setDeclining] = useState(false)
+  const [showSuggest, setShowSuggest] = useState(false)
 
   useEffect(() => {
     if (!transaction) return
@@ -189,15 +192,22 @@ export default function TransactionDialog({ transaction, onClose, onSaved }) {
                   variant="outline"
                   size="sm"
                   className="text-xs"
-                  onClick={() => alert("Decline flow coming in a future update.")}
+                  disabled={declining}
+                  onClick={async () => {
+                    if (!confirm("Remove yourself from this split? The transaction will become 100% the owner's responsibility.")) return
+                    setDeclining(true)
+                    await fetch(`/api/transactions/${transaction.id}/decline`, { method: "POST" })
+                    setDeclining(false)
+                    onSaved?.()
+                  }}
                 >
-                  Decline
+                  {declining ? "Declining..." : "Decline"}
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   className="text-xs"
-                  onClick={() => alert("Suggest a change coming in a future update.")}
+                  onClick={() => setShowSuggest(true)}
                 >
                   Suggest a change
                 </Button>
@@ -228,6 +238,14 @@ export default function TransactionDialog({ transaction, onClose, onSaved }) {
           </Button>
         </DialogFooter>
       </DialogContent>
+      {showSuggest && (
+        <SuggestChangeForm
+          transaction={detail}
+          mySplit={detail.mySplit}
+          onClose={() => setShowSuggest(false)}
+          onSubmitted={() => { setShowSuggest(false); onSaved?.() }}
+        />
+      )}
     </Dialog>
   )
 }
