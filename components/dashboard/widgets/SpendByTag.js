@@ -44,7 +44,7 @@ export default function SpendByTag({ data, chartType = "donut" }) {
 
   return (
     <WidgetContainer title={drillLabel ? `Spending — ${drillLabel}` : "Spending by tag"} empty={empty} insufficient={false}>
-      <div className="flex flex-col h-full">
+      <div className="flex flex-col gap-2">
         {drillTarget && (
           <button
             className="text-xs text-muted-foreground hover:text-foreground mb-1 text-left"
@@ -54,7 +54,7 @@ export default function SpendByTag({ data, chartType = "donut" }) {
           </button>
         )}
 
-        <div className="flex-1 min-h-0">
+        <div className="h-[240px]">
           {chartType === "bar" ? (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>

@@ -87,7 +87,6 @@ describe("GET /api/dashboard/config", () => {
     const body = await res.json()
     expect(res.status).toBe(200)
     expect(Array.isArray(body.widgets)).toBe(true)
-    expect(Array.isArray(body.layout)).toBe(true)
     expect(body.widgets.length).toBeGreaterThan(0)
   })
 

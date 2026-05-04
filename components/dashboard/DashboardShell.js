@@ -55,9 +55,9 @@ export default function DashboardShell() {
     fetch("/api/dashboard/config").then(r => r.json()).then(setConfig)
   }, [])
 
-  const handleLayoutChange = useCallback(async (newLayout) => {
+  const handleWidgetReorder = useCallback(async (newWidgets) => {
     if (!config) return
-    const updated = { ...config, layout: newLayout }
+    const updated = { ...config, widgets: newWidgets }
     setConfig(updated)
     await fetch("/api/dashboard/config", {
       method: "PUT",
@@ -93,7 +93,7 @@ export default function DashboardShell() {
 
       {!locked && (
         <p className="text-xs text-muted-foreground bg-muted px-3 py-1.5 rounded-md">
-          Layout unlocked — drag and resize widgets. Changes save automatically.
+          Layout unlocked — drag widgets to reorder. Changes save automatically.
         </p>
       )}
 
@@ -101,18 +101,14 @@ export default function DashboardShell() {
         <p className="text-sm text-muted-foreground py-8 text-center">Loading...</p>
       ) : (
         <WidgetGrid
-          layout={config.layout}
+          widgets={config.widgets}
           locked={locked}
-          onLayoutChange={handleLayoutChange}
+          onReorder={handleWidgetReorder}
         >
           {config.widgets.map(widget => {
             const renderFn = WIDGET_COMPONENTS[widget.type]
             if (!renderFn) return null
-            return (
-              <div key={widget.id}>
-                {renderFn(dashData, widget)}
-              </div>
-            )
+            return renderFn(dashData, widget)
           })}
         </WidgetGrid>
       )}

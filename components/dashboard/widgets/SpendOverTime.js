@@ -30,6 +30,7 @@ export default function SpendOverTime({ data, chartType = "bar" }) {
 
   return (
     <WidgetContainer title="Spending over time" empty={empty} insufficient={false}>
+      <div className="h-[260px]">
       <ResponsiveContainer width="100%" height="100%">
         {chartType === "line" ? (
           <LineChart data={chartData} margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
@@ -49,6 +50,7 @@ export default function SpendOverTime({ data, chartType = "bar" }) {
           </BarChart>
         )}
       </ResponsiveContainer>
+      </div>
     </WidgetContainer>
   )
 }

@@ -15,15 +15,6 @@ const DEFAULT_CONFIG = {
     { id: "merchants", type: "top_merchants" },
     { id: "transactions", type: "top_transactions" },
   ],
-  layout: [
-    { i: "summary", x: 0, y: 0, w: 12, h: 2 },
-    { i: "spend-tag", x: 0, y: 2, w: 5, h: 5 },
-    { i: "over-time", x: 5, y: 2, w: 7, h: 5 },
-    { i: "tag-up", x: 0, y: 7, w: 4, h: 4 },
-    { i: "tag-down", x: 4, y: 7, w: 4, h: 4 },
-    { i: "merchants", x: 8, y: 7, w: 4, h: 4 },
-    { i: "transactions", x: 0, y: 11, w: 12, h: 5 },
-  ],
 }
 
 export async function GET() {
