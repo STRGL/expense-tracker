@@ -1,8 +1,7 @@
 // components/layout/Header.js
 import Breadcrumbs from "./Breadcrumbs"
-import { Search } from "lucide-react"
-import { Input } from "@/components/ui/input"
 import NotificationBell from "./NotificationBell"
+import SearchBar from "./SearchBar"
 
 export default function Header() {
   return (
@@ -12,15 +11,7 @@ export default function Header() {
       </div>
 
       <div className="flex items-center gap-2">
-        <div className="relative w-56">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
-          <Input
-            placeholder="Search transactions..."
-            className="pl-8 h-9 text-sm"
-            readOnly
-          />
-        </div>
-
+        <SearchBar />
         <NotificationBell />
       </div>
     </header>
