@@ -1,7 +1,7 @@
 import "./globals.css"
 import { Inter } from "next/font/google"
 import { SessionProvider } from "next-auth/react"
-import Script from "next/script"
+import { cookies } from "next/headers"
 import { ThemeProvider } from "@/components/providers/ThemeProvider"
 
 const inter = Inter({ subsets: ["latin"] })
@@ -11,17 +11,14 @@ export const metadata = {
   description: "Track and split expenses",
 }
 
-export default function RootLayout({ children }) {
+export default async function RootLayout({ children }) {
+  const cookieStore = await cookies()
+  const theme = cookieStore.get("theme")?.value === "dark" ? "dark" : "light"
+
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className={theme === "dark" ? "dark" : undefined} suppressHydrationWarning>
       <body className={inter.className}>
-        <Script id="theme-init" strategy="beforeInteractive">{`
-          try {
-            var t = localStorage.getItem('theme');
-            if (t === 'dark') document.documentElement.classList.add('dark');
-          } catch {}
-        `}</Script>
-        <ThemeProvider>
+        <ThemeProvider initialTheme={theme}>
           <SessionProvider>{children}</SessionProvider>
         </ThemeProvider>
       </body>

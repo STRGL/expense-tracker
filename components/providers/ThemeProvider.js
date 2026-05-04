@@ -1,20 +1,15 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState } from "react"
+import { createContext, useContext, useState } from "react"
 
 const ThemeCtx = createContext({ theme: "light", setTheme: () => {} })
 
-export function ThemeProvider({ children }) {
-  const [theme, setThemeState] = useState("light")
-
-  useEffect(() => {
-    const stored = localStorage.getItem("theme") || "light"
-    setThemeState(stored)
-  }, [])
+export function ThemeProvider({ children, initialTheme = "light" }) {
+  const [theme, setThemeState] = useState(initialTheme)
 
   function setTheme(t) {
     setThemeState(t)
-    localStorage.setItem("theme", t)
+    document.cookie = `theme=${t};path=/;max-age=31536000;samesite=lax`
     if (t === "dark") {
       document.documentElement.classList.add("dark")
     } else {
