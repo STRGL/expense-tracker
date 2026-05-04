@@ -3,7 +3,10 @@
  */
 import { GET, PUT } from "@/app/api/profile/route"
 
-const mockUser = { id: "u1", name: "Alice", email: "alice@test.com", wage: 50000, role: "user" }
+const mockUser = {
+  id: "u1", name: "Alice", email: "alice@test.com",
+  wage: 50000, role: "user", themeAccent: "blue",
+}
 
 jest.mock("@/auth", () => ({
   auth: jest.fn(),
@@ -40,6 +43,15 @@ describe("GET /api/profile", () => {
     expect(res.status).toBe(200)
     expect(body.email).toBe("alice@test.com")
     expect(body.passwordHash).toBeUndefined()
+  })
+
+  it("returns themeAccent in the profile", async () => {
+    auth.mockResolvedValue({ user: { id: "u1" } })
+    prisma.user.findUnique.mockResolvedValue(mockUser)
+    const res = await GET()
+    const body = await res.json()
+    expect(res.status).toBe(200)
+    expect(body.themeAccent).toBe("blue")
   })
 })
 
@@ -96,5 +108,33 @@ describe("PUT /api/profile", () => {
     expect(prisma.user.update).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ passwordHash: "new-hash" }) })
     )
+  })
+
+  it("updates themeAccent when valid", async () => {
+    auth.mockResolvedValue({ user: { id: "u1" } })
+    prisma.user.update.mockResolvedValue({ ...mockUser, themeAccent: "violet" })
+    const req = new Request("http://localhost/api/profile", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ themeAccent: "violet" }),
+    })
+    const res = await PUT(req)
+    const body = await res.json()
+    expect(res.status).toBe(200)
+    expect(body.themeAccent).toBe("violet")
+    expect(prisma.user.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { themeAccent: "violet" } })
+    )
+  })
+
+  it("returns 400 for an invalid accent value", async () => {
+    auth.mockResolvedValue({ user: { id: "u1" } })
+    const req = new Request("http://localhost/api/profile", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ themeAccent: "chartreuse" }),
+    })
+    const res = await PUT(req)
+    expect(res.status).toBe(400)
   })
 })

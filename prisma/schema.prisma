@@ -15,6 +15,7 @@ model User {
   role            String    @default("user")
   wage            Float?
   dashboardConfig String?
+  themeAccent     String    @default("blue")
   isActive        Boolean   @default(true)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
