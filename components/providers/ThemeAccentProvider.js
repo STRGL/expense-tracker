@@ -12,5 +12,5 @@ export default function ThemeAccentProvider({ accent, children }) {
     }
   }, [accent])
 
-  return children
+  return <>{children}</>
 }
