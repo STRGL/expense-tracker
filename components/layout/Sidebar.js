@@ -18,11 +18,11 @@ import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 const NAV_ITEMS = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/dashboard",    label: "Dashboard",   icon: LayoutDashboard },
   { href: "/transactions", label: "Transactions", icon: ArrowLeftRight },
-  { href: "/imports", label: "Import", icon: Upload },
-  { href: "/search", label: "Search", icon: Search },
-  { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/imports",      label: "Import",       icon: Upload },
+  { href: "/search",       label: "Search",       icon: Search },
+  { href: "/settings",     label: "Settings",     icon: Settings },
 ]
 
 const ADMIN_ITEMS = [
@@ -36,15 +36,25 @@ export default function Sidebar({ collapsed, onToggle, isAdmin }) {
     <TooltipProvider delayDuration={0}>
       <aside
         className={cn(
-          "flex flex-col h-full border-r bg-background transition-all duration-200 shrink-0",
+          "flex flex-col h-full border-r bg-sidebar transition-all duration-200 shrink-0",
           collapsed ? "w-14" : "w-56"
         )}
       >
-        <div className={cn("flex items-center h-14 border-b px-3", collapsed ? "justify-center" : "justify-between")}>
+        <div className={cn(
+          "flex items-center h-14 border-b border-sidebar-border px-3",
+          collapsed ? "justify-center" : "justify-between"
+        )}>
           {!collapsed && (
-            <span className="font-semibold text-sm tracking-tight">Expense Tracker</span>
+            <span className="font-semibold text-sm tracking-tight text-sidebar-foreground">
+              Expense Tracker
+            </span>
           )}
-          <Button variant="ghost" size="icon" onClick={onToggle} className="h-7 w-7">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onToggle}
+            className="h-7 w-7 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+          >
             {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
           </Button>
         </div>
@@ -56,7 +66,7 @@ export default function Sidebar({ collapsed, onToggle, isAdmin }) {
 
           {isAdmin && (
             <>
-              <div className={cn("my-2 border-t", collapsed && "mx-1")} />
+              <div className={cn("my-2 border-t border-sidebar-border", collapsed && "mx-1")} />
               {ADMIN_ITEMS.map((item) => (
                 <NavItem key={item.href} item={item} pathname={pathname} collapsed={collapsed} />
               ))}
@@ -77,8 +87,9 @@ function NavItem({ item, pathname, collapsed }) {
       href={item.href}
       className={cn(
         "flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium transition-colors",
-        "hover:bg-accent hover:text-accent-foreground",
-        isActive ? "bg-accent text-accent-foreground" : "text-muted-foreground",
+        isActive
+          ? "bg-sidebar-primary text-sidebar-primary-foreground"
+          : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
         collapsed && "justify-center px-2"
       )}
     >
