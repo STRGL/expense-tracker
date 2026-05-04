@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -22,15 +23,16 @@ export default function TransactionList() {
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState(null)
   const [tags, setTags] = useState([])
+  const searchParams = useSearchParams()
   const [filters, setFilters] = useState({
-    merchant: "",
-    dateFrom: "",
-    dateTo: "",
-    tagId: "",
-    minAmount: "",
-    maxAmount: "",
-    sortBy: "date",
-    sortOrder: "desc",
+    merchant: searchParams.get("merchant") ?? "",
+    dateFrom: searchParams.get("dateFrom") ?? "",
+    dateTo: searchParams.get("dateTo") ?? "",
+    tagId: searchParams.get("tagId") ?? "",
+    minAmount: searchParams.get("minAmount") ?? "",
+    maxAmount: searchParams.get("maxAmount") ?? "",
+    sortBy: searchParams.get("sortBy") ?? "date",
+    sortOrder: searchParams.get("sortOrder") ?? "desc",
   })
 
   const load = useCallback(async () => {

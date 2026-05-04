@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, Suspense } from "react"
 import TransactionList from "./TransactionList"
 import NewTransactionButton from "./NewTransactionButton"
 
@@ -13,7 +13,9 @@ export default function TransactionListContainer() {
       <div className="flex justify-end">
         <NewTransactionButton onSaved={reload} />
       </div>
-      <TransactionList key={reloadKey} onReload={reload} />
+      <Suspense fallback={<p className="text-sm text-muted-foreground py-8 text-center">Loading...</p>}>
+        <TransactionList key={reloadKey} onReload={reload} />
+      </Suspense>
     </div>
   )
 }
