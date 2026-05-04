@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { calculateSplits } from "@/lib/split-calculator"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 export default function SplitPanel({ totalAmount, currentUserId, onChange }) {
   const [splitting, setSplitting] = useState(false)
@@ -13,6 +14,7 @@ export default function SplitPanel({ totalAmount, currentUserId, onChange }) {
   const [users, setUsers] = useState([])
   const [selectedIds, setSelectedIds] = useState([])
   const [amounts, setAmounts] = useState({})
+  const [isPending, setIsPending] = useState(false)
 
   useEffect(() => {
     fetch("/api/users/active")
@@ -23,6 +25,7 @@ export default function SplitPanel({ totalAmount, currentUserId, onChange }) {
   useEffect(() => {
     if (!splitting) {
       onChange([{ userId: currentUserId, amount: totalAmount, splitMethod: "equal", tagId: null }])
+      setIsPending(false)
       return
     }
     const uniqueIds = [...new Set([currentUserId, ...selectedIds])]
@@ -30,14 +33,19 @@ export default function SplitPanel({ totalAmount, currentUserId, onChange }) {
       try {
         const userObjs = uniqueIds.map((id) => {
           const u = users.find((u) => u.id === id)
-          return { id, wage: u?.wage ?? 0 }
+          return { id, wage: u?.wage }
         })
-        const computed = calculateSplits(totalAmount, method, userObjs)
-        const newAmounts = Object.fromEntries(computed.map((s) => [s.userId, s.amount]))
+        const result = calculateSplits(totalAmount, method, userObjs)
+        const computedSplits = result.splits ?? result
+        const pending = !!result.pendingData
+        
+        const newAmounts = Object.fromEntries(computedSplits.map((s) => [s.userId, s.amount]))
         setAmounts(newAmounts)
-        onChange(computed.map((s) => ({ userId: s.userId, amount: s.amount, splitMethod: method, tagId: null })))
+        setIsPending(pending)
+        onChange(computedSplits.map((s) => ({ userId: s.userId, amount: s.amount, splitMethod: method, tagId: null })))
       } catch {
         onChange([])
+        setIsPending(false)
       }
     } else {
       const splits = uniqueIds.map((id) => ({
@@ -47,6 +55,7 @@ export default function SplitPanel({ totalAmount, currentUserId, onChange }) {
         tagId: null,
       }))
       onChange(splits)
+      setIsPending(false)
     }
   }, [splitting, method, selectedIds, totalAmount, users, currentUserId])
 
@@ -58,6 +67,7 @@ export default function SplitPanel({ totalAmount, currentUserId, onChange }) {
 
   const otherUsers = users.filter((u) => u.id !== currentUserId)
   const allIncluded = [...new Set([currentUserId, ...selectedIds])]
+  const canProportional = users.length > 1
 
   return (
     <div className="space-y-3">
@@ -81,20 +91,37 @@ export default function SplitPanel({ totalAmount, currentUserId, onChange }) {
       {splitting && (
         <div className="space-y-3 pl-2 border-l-2 border-muted">
           <div className="flex gap-2">
-            {["equal", "proportional", "specified"].map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => setMethod(m)}
-                className={`text-xs px-2.5 py-1 rounded border transition-colors ${
-                  method === m
-                    ? "border-primary bg-primary/10 text-primary font-medium"
-                    : "border-border text-muted-foreground hover:border-foreground"
-                }`}
-              >
-                {m === "equal" ? "Equal" : m === "proportional" ? "By wage" : "Custom"}
-              </button>
-            ))}
+            <TooltipProvider>
+              {["equal", "proportional", "specified"].map((m) => {
+                const label = m === "equal" ? "Equal" : m === "proportional" ? "By wage" : "Custom"
+                const disabled = m === "proportional" && !canProportional
+                const button = (
+                  <button
+                    key={m}
+                    type="button"
+                    disabled={disabled}
+                    onClick={() => setMethod(m)}
+                    className={`text-xs px-2.5 py-1 rounded border transition-colors ${
+                      method === m
+                        ? "border-primary bg-primary/10 text-primary font-medium"
+                        : "border-border text-muted-foreground hover:border-foreground"
+                    } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                  >
+                    {label}
+                  </button>
+                )
+
+                if (disabled) {
+                  return (
+                    <Tooltip key={m}>
+                      <TooltipTrigger asChild>{button}</TooltipTrigger>
+                      <TooltipContent>Proportional split requires at least 2 active users.</TooltipContent>
+                    </Tooltip>
+                  )
+                }
+                return button
+              })}
+            </TooltipProvider>
           </div>
 
           <div className="space-y-1">
@@ -114,10 +141,16 @@ export default function SplitPanel({ totalAmount, currentUserId, onChange }) {
                   />
                   <Label htmlFor={`split-${u.id}`} className="font-normal text-sm cursor-pointer">
                     {u.name}
-                    {u.wage && (
+                    {u.wage ? (
                       <span className="text-muted-foreground text-xs ml-1">
                         (£{u.wage.toLocaleString()}/yr)
                       </span>
+                    ) : (
+                      allIncluded.includes(u.id) && method === "proportional" && (
+                        <span className="text-amber-600 text-[10px] font-medium ml-1 uppercase tracking-wider">
+                          Pending Wage
+                        </span>
+                      )
                     )}
                   </Label>
                 </div>
@@ -136,7 +169,7 @@ export default function SplitPanel({ totalAmount, currentUserId, onChange }) {
                 )}
                 {method !== "specified" && allIncluded.includes(u.id) && (
                   <span className="text-sm tabular-nums text-muted-foreground">
-                    £{(amounts[u.id] ?? 0).toFixed(2)}
+                    {isPending && !u.wage ? "—" : `£${(amounts[u.id] ?? 0).toFixed(2)}`}
                   </span>
                 )}
               </div>
@@ -159,18 +192,17 @@ export default function SplitPanel({ totalAmount, currentUserId, onChange }) {
               />
             ) : (
               <span className="tabular-nums font-medium">
-                £{(amounts[currentUserId] ?? totalAmount).toFixed(2)}
+                {isPending ? "—" : `£${(amounts[currentUserId] ?? totalAmount).toFixed(2)}`}
               </span>
             )}
           </div>
 
-          {method === "proportional" && allIncluded.some((id) => {
-            const u = users.find((u) => u.id === id)
-            return !u?.wage
-          }) && (
-            <p className="text-xs text-amber-600">
-              Some users have no wage set — set wages in Settings for proportional splits.
-            </p>
+          {isPending && (
+            <div className="bg-amber-50 border border-amber-200 rounded p-2 mt-2">
+              <p className="text-[11px] text-amber-800 leading-tight">
+                <strong>Calculation Pending:</strong> Some users haven't set their wage. We'll notify them to update their profile so the split can be completed.
+              </p>
+            </div>
           )}
         </div>
       )}

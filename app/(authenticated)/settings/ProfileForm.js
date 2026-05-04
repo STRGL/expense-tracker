@@ -102,7 +102,7 @@ export default function ProfileForm() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Personal details</CardTitle>
-          <CardDescription>Update your name, email, and monthly wage.</CardDescription>
+          <CardDescription>Update your name, email, and annual wage.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -116,7 +116,7 @@ export default function ProfileForm() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="wage">
-                Monthly wage <span className="text-muted-foreground text-xs">(used for proportional splits)</span>
+                Annual wage <span className="text-muted-foreground text-xs">(used for proportional splits)</span>
               </Label>
               <Input
                 id="wage"

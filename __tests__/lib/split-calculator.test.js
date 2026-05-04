@@ -25,22 +25,73 @@ describe("calculateSplits — equal", () => {
 describe("calculateSplits — proportional", () => {
   it("splits by wage ratio", () => {
     const users = [{ id: "u1", wage: 30000 }, { id: "u2", wage: 70000 }]
-    const result = calculateSplits(100, "proportional", users)
-    expect(result.find(r => r.userId === "u1").amount).toBeCloseTo(30, 1)
-    expect(result.find(r => r.userId === "u2").amount).toBeCloseTo(70, 1)
-    const total = result.reduce((s, r) => s + r.amount, 0)
+    const { splits, pendingData } = calculateSplits(100, "proportional", users)
+    expect(pendingData).toBe(false)
+    expect(splits.find(r => r.userId === "u1").amount).toBeCloseTo(30, 1)
+    expect(splits.find(r => r.userId === "u2").amount).toBeCloseTo(70, 1)
+    const total = splits.reduce((s, r) => s + r.amount, 0)
     expect(total).toBeCloseTo(100, 2)
   })
 
-  it("throws when all wages are zero or missing", () => {
+  it("throws when all wages are zero (and none are missing/null)", () => {
     expect(() =>
-      calculateSplits(100, "proportional", [{ id: "u1" }, { id: "u2" }])
+      calculateSplits(100, "proportional", [{ id: "u1", wage: 0 }, { id: "u2", wage: 0 }])
     ).toThrow("wages are zero")
   })
 
   it("handles a single user with any wage", () => {
-    const result = calculateSplits(50, "proportional", [{ id: "u1", wage: 45000 }])
-    expect(result[0].amount).toBeCloseTo(50, 2)
+    const { splits } = calculateSplits(50, "proportional", [{ id: "u1", wage: 45000 }])
+    expect(splits[0].amount).toBeCloseTo(50, 2)
+  })
+
+  it("yields identical ratios whether using monthly or annual wages", () => {
+    const amount = 1000
+    const monthlyUsers = [
+      { id: "u1", wage: 2500 },
+      { id: "u2", wage: 5000 },
+    ]
+    const annualUsers = [
+      { id: "u1", wage: 2500 * 12 },
+      { id: "u2", wage: 5000 * 12 },
+    ]
+
+    const monthlyResult = calculateSplits(amount, "proportional", monthlyUsers)
+    const annualResult = calculateSplits(amount, "proportional", annualUsers)
+
+    expect(monthlyResult).toEqual(annualResult)
+    expect(monthlyResult.splits[0].amount).toBeCloseTo(333.34, 2)
+    expect(monthlyResult.splits[1].amount).toBeCloseTo(666.66, 2)
+  })
+
+  it("scales correctly for 4 users with proportional splits", () => {
+    const amount = 100
+    const users = [
+      { id: "u1", wage: 20000 },
+      { id: "u2", wage: 20000 },
+      { id: "u3", wage: 30000 },
+      { id: "u4", wage: 30000 },
+    ]
+    
+    const { splits } = calculateSplits(amount, "proportional", users)
+    
+    expect(splits).toHaveLength(4)
+    expect(splits.find(r => r.userId === "u1").amount).toBe(20)
+    expect(splits.find(r => r.userId === "u2").amount).toBe(20)
+    expect(splits.find(r => r.userId === "u3").amount).toBe(30)
+    expect(splits.find(r => r.userId === "u4").amount).toBe(30)
+    
+    const total = splits.reduce((s, r) => s + r.amount, 0)
+    expect(total).toBe(100)
+  })
+
+  it("returns pendingData: true and 0 amounts if any wage is missing", () => {
+    const users = [
+      { id: "u1", wage: 50000 },
+      { id: "u2", wage: null },
+    ]
+    const { splits, pendingData } = calculateSplits(100, "proportional", users)
+    expect(pendingData).toBe(true)
+    expect(splits.every(s => s.amount === 0)).toBe(true)
   })
 })
 

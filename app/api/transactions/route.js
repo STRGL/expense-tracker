@@ -18,6 +18,8 @@ export async function GET(request) {
   const maxAmount = searchParams.get("maxAmount")
   const sortBy = searchParams.get("sortBy") ?? "date"
   const sortOrder = searchParams.get("sortOrder") ?? "desc"
+  const limit = searchParams.get("limit") ? Number(searchParams.get("limit")) : null
+  const offset = searchParams.get("offset") ? Number(searchParams.get("offset")) : 0
 
   const txWhere = {}
   if (dateFrom) txWhere.date = { ...txWhere.date, gte: new Date(dateFrom) }
@@ -26,20 +28,17 @@ export async function GET(request) {
   if (minAmount) txWhere.totalAmount = { ...txWhere.totalAmount, gte: Number(minAmount) }
   if (maxAmount) txWhere.totalAmount = { ...txWhere.totalAmount, lte: Number(maxAmount) }
 
-  const orderBy =
-    sortBy === "amount"
-      ? { amount: sortOrder }
-      : sortBy === "merchant"
-      ? { transaction: { merchantName: sortOrder } }
-      : { transaction: { date: sortOrder } }
+  const splitWhere = {
+    userId: session.user.id,
+    status: "active",
+    ...(tagId ? { tagId } : {}),
+    transaction: txWhere,
+  }
+
+  const total = await prisma.transactionSplit.count({ where: splitWhere })
 
   const splits = await prisma.transactionSplit.findMany({
-    where: {
-      userId: session.user.id,
-      status: "active",
-      ...(tagId ? { tagId } : {}),
-      transaction: txWhere,
-    },
+    where: splitWhere,
     include: {
       transaction: {
         include: {
@@ -51,10 +50,17 @@ export async function GET(request) {
       },
       tag: { select: { id: true, name: true, colour: true } },
     },
-    orderBy,
+    orderBy:
+      sortBy === "amount"
+        ? { amount: sortOrder }
+        : sortBy === "merchant"
+        ? { transaction: { merchantName: sortOrder } }
+        : { transaction: { date: sortOrder } },
+    take: limit || undefined,
+    skip: offset,
   })
 
-  const result = splits.map((split) => ({
+  const transactions = splits.map((split) => ({
     id: split.transaction.id,
     date: split.transaction.date,
     merchantName: split.transaction.merchantName,
@@ -72,7 +78,7 @@ export async function GET(request) {
     importBatchId: split.transaction.importBatchId,
   }))
 
-  return NextResponse.json(result)
+  return NextResponse.json({ transactions, total })
 }
 
 export async function POST(request) {
@@ -92,8 +98,11 @@ export async function POST(request) {
     return NextResponse.json({ error: "At least one split is required" }, { status: 400 })
   }
 
+  const isProportional = splits.every(s => s.splitMethod === "proportional")
   const splitSum = splits.reduce((sum, s) => sum + s.amount, 0)
-  if (Math.abs(splitSum - totalAmount) > 0.011) {
+  const isPending = isProportional && splitSum === 0 && splits.length > 1
+
+  if (!isPending && Math.abs(splitSum - totalAmount) > 0.011) {
     return NextResponse.json({ error: "Split amounts must sum to total amount" }, { status: 400 })
   }
 
@@ -121,11 +130,14 @@ export async function POST(request) {
         },
       })
       if (split.userId !== session.user.id) {
+        const user = await tx.user.findUnique({ where: { id: split.userId }, select: { wage: true } })
+        const type = isPending && user?.wage === null ? "missing_wage_for_split" : "split_created"
+        
         await tx.notification.create({
           data: {
             userId: split.userId,
             transactionId: t.id,
-            type: "split_created",
+            type,
             read: false,
           },
         })

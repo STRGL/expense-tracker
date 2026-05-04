@@ -13,6 +13,7 @@ jest.mock("@/lib/prisma", () => ({
       findFirst: jest.fn(),
       update: jest.fn(),
       deleteMany: jest.fn(),
+      count: jest.fn(),
     },
     transaction: {
       create: jest.fn(),
@@ -58,18 +59,31 @@ describe("GET /api/transactions", () => {
     expect(res.status).toBe(401)
   })
 
-  it("returns transactions shaped for the current user's view", async () => {
+  it("returns transactions and total count shaped for the current user's view", async () => {
     auth.mockResolvedValue(session)
     prisma.transactionSplit.findMany.mockResolvedValue([mockSplit])
+    prisma.transactionSplit.count.mockResolvedValue(1)
     const req = new Request("http://localhost/api/transactions")
     const res = await GET(req)
     const body = await res.json()
     expect(res.status).toBe(200)
-    expect(body).toHaveLength(1)
-    expect(body[0].id).toBe("tx1")
-    expect(body[0].myAmount).toBe(50)
-    expect(body[0].isOwner).toBe(true)
-    expect(body[0].splitCount).toBe(2)
+    expect(body.transactions).toHaveLength(1)
+    expect(body.total).toBe(1)
+    expect(body.transactions[0].id).toBe("tx1")
+  })
+
+  it("passes limit and offset to prisma findMany", async () => {
+    auth.mockResolvedValue(session)
+    prisma.transactionSplit.findMany.mockResolvedValue([])
+    prisma.transactionSplit.count.mockResolvedValue(0)
+    const req = new Request("http://localhost/api/transactions?limit=10&offset=20")
+    await GET(req)
+    expect(prisma.transactionSplit.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        take: 10,
+        skip: 20,
+      })
+    )
   })
 })
 

@@ -21,6 +21,7 @@ const TYPE_LABELS = {
   transaction_deleted: "Deleted a transaction you were part of",
   split_suggestion: "Suggested changes to a transaction",
   split_suggestion_response: "Responded to your suggestion",
+  missing_wage_for_split: "Action required: Wage missing for split",
 }
 
 export default function NotificationItem({ notification, onAction }) {
@@ -63,6 +64,19 @@ export default function NotificationItem({ notification, onAction }) {
           <span className="mt-1 w-2 h-2 rounded-full bg-primary shrink-0" />
         )}
       </div>
+
+      {/* Missing wage action */}
+      {notification.type === "missing_wage_for_split" && (
+        <div className="pt-1">
+          <Button
+            size="sm"
+            className="h-7 text-xs"
+            onClick={() => { window.location.href = "/settings" }}
+          >
+            Update Profile
+          </Button>
+        </div>
+      )}
 
       {/* Suggestion diff — shown on split_suggestion notifications for the owner */}
       {notification.type === "split_suggestion" && notification.suggestion && (
