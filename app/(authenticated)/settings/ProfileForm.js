@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -15,6 +15,7 @@ export default function ProfileForm() {
   const [message, setMessage] = useState("")
   const [accent, setAccent] = useState("blue")
   const [accentSaved, setAccentSaved] = useState(false)
+  const accentTimerRef = useRef(null)
 
   useEffect(() => {
     fetch("/api/profile")
@@ -23,6 +24,10 @@ export default function ProfileForm() {
         setProfile(data)
         setAccent(data.themeAccent ?? "blue")
       })
+  }, [])
+
+  useEffect(() => {
+    return () => clearTimeout(accentTimerRef.current)
   }, [])
 
   async function handleSubmit(e) {
@@ -62,13 +67,30 @@ export default function ProfileForm() {
     for (const [key, value] of Object.entries(vars)) {
       document.documentElement.style.setProperty(key, value)
     }
-    await fetch("/api/profile", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ themeAccent: name }),
-    })
+    try {
+      const res = await fetch("/api/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ themeAccent: name }),
+      })
+      if (!res.ok) {
+        fetch("/api/profile").then(r => r.json()).then(data => {
+          setAccent(data.themeAccent ?? "blue")
+          const revertVars = ACCENT_THEMES[data.themeAccent] ?? ACCENT_THEMES.blue
+          for (const [key, value] of Object.entries(revertVars)) {
+            document.documentElement.style.setProperty(key, value)
+          }
+        })
+        setMessage("Failed to save accent colour.")
+        return
+      }
+    } catch {
+      setMessage("Failed to save accent colour.")
+      return
+    }
     setAccentSaved(true)
-    setTimeout(() => setAccentSaved(false), 2000)
+    clearTimeout(accentTimerRef.current)
+    accentTimerRef.current = setTimeout(() => setAccentSaved(false), 2000)
   }
 
   if (!profile) return <p className="text-sm text-muted-foreground">Loading...</p>
@@ -137,6 +159,8 @@ export default function ProfileForm() {
                 key={name}
                 type="button"
                 title={label}
+                aria-label={label}
+                aria-pressed={accent === name}
                 onClick={() => handleAccentChange(name)}
                 className={cn(
                   "w-8 h-8 rounded-full transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
