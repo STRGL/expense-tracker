@@ -15,6 +15,7 @@ export default function ProfileForm() {
   const [message, setMessage] = useState("")
   const [accent, setAccent] = useState("blue")
   const [accentSaved, setAccentSaved] = useState(false)
+  const [accentError, setAccentError] = useState("")
   const accentTimerRef = useRef(null)
 
   useEffect(() => {
@@ -63,6 +64,7 @@ export default function ProfileForm() {
 
   async function handleAccentChange(name) {
     setAccent(name)
+    setAccentError("")
     const vars = ACCENT_THEMES[name] ?? ACCENT_THEMES.blue
     for (const [key, value] of Object.entries(vars)) {
       document.documentElement.style.setProperty(key, value)
@@ -81,11 +83,11 @@ export default function ProfileForm() {
             document.documentElement.style.setProperty(key, value)
           }
         })
-        setMessage("Failed to save accent colour.")
+        setAccentError("Failed to save accent colour.")
         return
       }
     } catch {
-      setMessage("Failed to save accent colour.")
+      setAccentError("Failed to save accent colour.")
       return
     }
     setAccentSaved(true)
@@ -172,6 +174,9 @@ export default function ProfileForm() {
           </div>
           {accentSaved && (
             <p className="text-xs text-muted-foreground mt-3">Accent colour saved.</p>
+          )}
+          {accentError && (
+            <p className="text-xs text-destructive mt-3">{accentError}</p>
           )}
         </CardContent>
       </Card>
