@@ -35,6 +35,10 @@ export default function ReviewTable({ batchId }) {
       fetch(`/api/imports/${batchId}`),
       fetch("/api/tags"),
     ])
+    if (!batchRes.ok) {
+      setLoading(false)
+      return
+    }
     const batchData = await batchRes.json()
     setBatch(batchData)
     const tagTree = await tagsRes.json()
@@ -143,6 +147,7 @@ export default function ReviewTable({ batchId }) {
           </thead>
           <tbody className="divide-y">
             {filteredRows.map(row => {
+              const rowTag = row.tagId ? allTags.find(t => t.id === row.tagId) ?? null : null
               const rowReasons = row.confidenceReasons ? JSON.parse(row.confidenceReasons) : []
               const hasLowConfidence = row.confidenceLevel === "amber" && rowReasons.includes("low_confidence_merchant")
               const hasSuggestion = hasLowConfidence && row.merchantResolved !== row.merchantRaw
@@ -191,10 +196,10 @@ export default function ReviewTable({ batchId }) {
                     </div>
                   </td>
                   <td className="px-3 py-2.5">
-                    {row.tag ? (
+                    {rowTag ? (
                       <span className="flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: row.tag.colour }} />
-                        <span className="text-xs">{row.tag.name}</span>
+                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: rowTag.colour }} />
+                        <span className="text-xs">{rowTag.name}</span>
                       </span>
                     ) : (
                       <span className="text-xs text-muted-foreground">Untagged</span>

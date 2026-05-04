@@ -14,10 +14,7 @@ export async function GET(request, { params }) {
   const batch = await prisma.importBatch.findUnique({
     where: { id, uploadedById: session.user.id },
     include: {
-      rows: {
-        orderBy: { id: "asc" },
-        include: { tag: { select: { id: true, name: true, colour: true } } },
-      },
+      rows: { orderBy: { id: "asc" } },
     },
   })
 
