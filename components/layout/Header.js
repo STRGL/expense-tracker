@@ -1,7 +1,7 @@
-// components/layout/Header.js
 import Breadcrumbs from "./Breadcrumbs"
 import NotificationBell from "./NotificationBell"
 import SearchBar from "./SearchBar"
+import ThemeToggle from "./ThemeToggle"
 
 export default function Header() {
   return (
@@ -9,9 +9,9 @@ export default function Header() {
       <div className="flex-1">
         <Breadcrumbs />
       </div>
-
       <div className="flex items-center gap-2">
         <SearchBar />
+        <ThemeToggle />
         <NotificationBell />
       </div>
     </header>
