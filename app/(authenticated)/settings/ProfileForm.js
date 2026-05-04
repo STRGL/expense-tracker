@@ -6,16 +6,23 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
+import { cn } from "@/lib/utils"
+import { ACCENT_THEMES, ACCENT_SWATCHES } from "@/lib/accent-themes"
 
 export default function ProfileForm() {
   const [profile, setProfile] = useState(null)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState("")
+  const [accent, setAccent] = useState("blue")
+  const [accentSaved, setAccentSaved] = useState(false)
 
   useEffect(() => {
     fetch("/api/profile")
       .then((r) => r.json())
-      .then(setProfile)
+      .then((data) => {
+        setProfile(data)
+        setAccent(data.themeAccent ?? "blue")
+      })
   }, [])
 
   async function handleSubmit(e) {
@@ -47,6 +54,21 @@ export default function ProfileForm() {
     } else {
       setMessage(data.error ?? "Update failed.")
     }
+  }
+
+  async function handleAccentChange(name) {
+    setAccent(name)
+    const vars = ACCENT_THEMES[name] ?? ACCENT_THEMES.blue
+    for (const [key, value] of Object.entries(vars)) {
+      document.documentElement.style.setProperty(key, value)
+    }
+    await fetch("/api/profile", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ themeAccent: name }),
+    })
+    setAccentSaved(true)
+    setTimeout(() => setAccentSaved(false), 2000)
   }
 
   if (!profile) return <p className="text-sm text-muted-foreground">Loading...</p>
@@ -100,6 +122,33 @@ export default function ProfileForm() {
               {saving ? "Saving..." : "Save changes"}
             </Button>
           </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Appearance</CardTitle>
+          <CardDescription>Choose your accent colour for buttons and charts.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-3 flex-wrap">
+            {ACCENT_SWATCHES.map(({ name, label, colour }) => (
+              <button
+                key={name}
+                type="button"
+                title={label}
+                onClick={() => handleAccentChange(name)}
+                className={cn(
+                  "w-8 h-8 rounded-full transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                  accent === name && "ring-2 ring-offset-2 ring-offset-background ring-foreground"
+                )}
+                style={{ backgroundColor: colour }}
+              />
+            ))}
+          </div>
+          {accentSaved && (
+            <p className="text-xs text-muted-foreground mt-3">Accent colour saved.</p>
+          )}
         </CardContent>
       </Card>
     </div>
