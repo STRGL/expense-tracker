@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { Loader2, AlertCircle, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
@@ -23,6 +24,7 @@ export default function ReviewTable({ batchId }) {
   const router = useRouter()
   const [batch, setBatch] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [selected, setSelected] = useState(null)
   const [filter, setFilter] = useState("all")
   const [allTags, setAllTags] = useState([])
@@ -31,21 +33,28 @@ export default function ReviewTable({ batchId }) {
 
   async function load() {
     setLoading(true)
-    const [batchRes, tagsRes] = await Promise.all([
-      fetch(`/api/imports/${batchId}`),
-      fetch("/api/tags"),
-    ])
-    if (!batchRes.ok) {
+    setError(null)
+    try {
+      const [batchRes, tagsRes] = await Promise.all([
+        fetch(`/api/imports/${batchId}`),
+        fetch("/api/tags"),
+      ])
+      if (!batchRes.ok) {
+        setError(batchRes.status === 404 ? "Import not found." : "Failed to load import data. Please try again.")
+        setLoading(false)
+        return
+      }
+      const batchData = await batchRes.json()
+      setBatch(batchData)
+      const tagTree = await tagsRes.json()
+      const flat = []
+      for (const p of tagTree) { flat.push(p); for (const c of p.children) flat.push(c) }
+      setAllTags(flat)
+    } catch {
+      setError("Something went wrong while loading the import. Please try again.")
+    } finally {
       setLoading(false)
-      return
     }
-    const batchData = await batchRes.json()
-    setBatch(batchData)
-    const tagTree = await tagsRes.json()
-    const flat = []
-    for (const p of tagTree) { flat.push(p); for (const c of p.children) flat.push(c) }
-    setAllTags(flat)
-    setLoading(false)
   }
 
   useEffect(() => { load() }, [batchId])
@@ -70,8 +79,26 @@ export default function ReviewTable({ batchId }) {
     if (res.ok) router.push("/transactions")
   }
 
-  if (loading) return <p className="text-sm text-muted-foreground py-8 text-center">Loading...</p>
-  if (!batch) return <p className="text-sm text-destructive py-8 text-center">Import not found.</p>
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center py-20 gap-3 text-muted-foreground">
+      <Loader2 className="h-8 w-8 animate-spin" />
+      <p className="text-sm">Loading import data...</p>
+    </div>
+  )
+
+  if (error) return (
+    <div className="flex flex-col items-center justify-center py-20 gap-4">
+      <div className="flex flex-col items-center gap-2 text-center">
+        <AlertCircle className="h-8 w-8 text-destructive" />
+        <p className="text-sm font-medium">{error}</p>
+        <p className="text-xs text-muted-foreground">If this keeps happening, try re-uploading your file.</p>
+      </div>
+      <Button variant="outline" size="sm" onClick={load}>
+        <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+        Try again
+      </Button>
+    </div>
+  )
 
   const filteredRows = filter === "all" ? batch.rows : batch.rows.filter(r => r.confidenceLevel === filter)
   const pendingRows = batch.rows.filter(r => r.status === "pending")
