@@ -32,21 +32,33 @@ export default function ImportRowDialog({ row, batchId, onClose, onSaved }) {
   async function handleSave() {
     setSaving(true)
     setError("")
-    const res = await fetch(`/api/imports/${batchId}/rows/${row.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        merchantResolved: form.merchantResolved,
-        date: form.date || null,
-        amount: form.amount ? Number(form.amount) : null,
-        tagId: form.tagId || null,
-        status: form.status,
-      }),
-    })
-    const data = await res.json()
-    setSaving(false)
-    if (!res.ok) { setError(data.error ?? "Save failed"); return }
-    onSaved?.()
+    try {
+      const res = await fetch(`/api/imports/${batchId}/rows/${row.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          merchantResolved: form.merchantResolved,
+          date: form.date || null,
+          amount: form.amount ? Number(form.amount) : null,
+          tagId: form.tagId || null,
+          status: form.status,
+        }),
+      })
+      
+      const contentType = res.headers.get("content-type")
+      const isJson = contentType && contentType.includes("application/json")
+      const data = isJson ? await res.json() : null
+
+      if (!res.ok) {
+        setError(data?.error ?? `Server error (${res.status}). Please try again.`)
+        return
+      }
+      onSaved?.()
+    } catch (err) {
+      setError("Network error. Please check your connection.")
+    } finally {
+      setSaving(false)
+    }
   }
 
   const reasons = row.confidenceReasons ? JSON.parse(row.confidenceReasons) : []

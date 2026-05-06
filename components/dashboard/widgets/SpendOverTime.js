@@ -38,15 +38,22 @@ export default function SpendOverTime({ data, chartType = "bar" }) {
             <XAxis dataKey="period" tickFormatter={formatPeriod} tick={{ fontSize: 10 }} />
             <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `£${v}`} />
             <Tooltip content={<CustomTooltip />} />
-            <Line type="monotone" dataKey="amount" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+            <Line 
+              type="monotone" 
+              dataKey="amount" 
+              stroke="hsl(var(--primary))" 
+              strokeWidth={3} 
+              dot={{ r: 4, fill: "hsl(var(--primary))", strokeWidth: 0 }}
+              activeDot={{ r: 6, strokeWidth: 0 }}
+            />
           </LineChart>
         ) : (
           <BarChart data={chartData} margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-            <XAxis dataKey="period" tickFormatter={formatPeriod} tick={{ fontSize: 10 }} />
-            <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `£${v}`} />
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+            <XAxis dataKey="period" tickFormatter={formatPeriod} tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `£${v}`} axisLine={false} tickLine={false} />
             <Tooltip content={<CustomTooltip />} />
-            <Bar dataKey="amount" fill="hsl(var(--primary))" radius={[2, 2, 0, 0]} />
+            <Bar dataKey="amount" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
           </BarChart>
         )}
       </ResponsiveContainer>

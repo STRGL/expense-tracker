@@ -29,7 +29,6 @@ export async function PUT(request, { params }) {
   const updated = await prisma.importRow.update({
     where: { id: rowId },
     data,
-    include: { tag: { select: { id: true, name: true, colour: true } } },
   })
 
   return NextResponse.json(updated)

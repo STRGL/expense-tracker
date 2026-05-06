@@ -34,7 +34,6 @@ export async function GET(request) {
     prisma.transactionSplit.findMany({
       where: { ...splitQuery, transaction: { date: { gte: dateFrom, lte: dateTo } } },
       include: splitInclude,
-      orderBy: { amount: "desc" },
     }),
     prisma.transactionSplit.findMany({
       where: { ...splitQuery, transaction: { date: { gte: prevDateFrom, lte: prevDateTo } } },
@@ -42,11 +41,19 @@ export async function GET(request) {
     }),
   ])
 
-  const totalSpend = splits.reduce((s, sp) => s + sp.amount, 0)
+  // Sort splits by absolute amount for "Top Transactions" and "Biggest Transaction"
+  const sortedSplits = [...splits].sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount))
 
-  const biggestSplit = splits[0] ?? null
+  const outflowSplits = splits.filter(sp => sp.amount < 0)
+  const totalOutflow = Math.abs(outflowSplits.reduce((s, sp) => s + sp.amount, 0))
+
+  const biggestSplit = sortedSplits[0] ?? null
   const biggestTransaction = biggestSplit
-    ? { amount: biggestSplit.amount, merchantName: biggestSplit.transaction.merchantName, date: biggestSplit.transaction.date }
+    ? { 
+        amount: biggestSplit.amount, 
+        merchantName: biggestSplit.transaction.merchantName, 
+        date: biggestSplit.transaction.date 
+      }
     : null
 
   const tagCounts = {}
@@ -60,7 +67,7 @@ export async function GET(request) {
     : null
 
   const tagAmounts = {}
-  for (const sp of splits) {
+  for (const sp of outflowSplits) {
     const key = sp.tagId ?? "untagged"
     if (!tagAmounts[key]) {
       tagAmounts[key] = {
@@ -71,15 +78,15 @@ export async function GET(request) {
         amount: 0,
       }
     }
-    tagAmounts[key].amount += sp.amount
+    tagAmounts[key].amount += Math.abs(sp.amount)
   }
   const spendByTag = Object.values(tagAmounts)
 
   const monthTotals = {}
-  for (const sp of splits) {
+  for (const sp of outflowSplits) {
     const d = new Date(sp.transaction.date)
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`
-    monthTotals[key] = (monthTotals[key] ?? 0) + sp.amount
+    monthTotals[key] = (monthTotals[key] ?? 0) + Math.abs(sp.amount)
   }
   const spendOverTime = Object.entries(monthTotals)
     .sort(([a], [b]) => a.localeCompare(b))
@@ -91,14 +98,14 @@ export async function GET(request) {
       if (!sp.tagId) continue
       const topId = sp.tag?.parentId ?? sp.tagId
       if (!byTag[topId]) byTag[topId] = { tagId: topId, amount: 0, tag: sp.tag?.parentId ? null : sp.tag }
-      byTag[topId].amount += sp.amount
+      byTag[topId].amount += Math.abs(sp.amount)
       if (!byTag[topId].tag && !sp.tag?.parentId) byTag[topId].tag = sp.tag
     }
     return byTag
   }
 
-  const currentByTag = groupByTopLevelTag(splits)
-  const prevByTag = groupByTopLevelTag(prevSplits)
+  const currentByTag = groupByTopLevelTag(outflowSplits)
+  const prevByTag = groupByTopLevelTag(prevSplits.filter(sp => sp.amount < 0))
   const allTagIds = new Set([...Object.keys(currentByTag), ...Object.keys(prevByTag)])
 
   const trends = []
@@ -113,24 +120,27 @@ export async function GET(request) {
       colour: tag?.colour ?? "#6b7280",
       previousAmount: previous,
       currentAmount: current,
-      change: previous > 0 ? ((current - previous) / previous) * 100 : null,
+      change: previous !== 0 ? ((current - previous) / previous) * 100 : null,
     })
   }
 
   const increases = trends.filter(t => t.change !== null && t.change > 0).sort((a, b) => b.change - a.change).slice(0, 3)
-  const decreases = trends.filter(t => t.change !== null && t.change < 0).sort((a, b) => a.change - b.change).slice(0, 3)
+  // Hide decreases if current month has NO spending (suggests data hasn't been uploaded yet)
+  const decreases = totalOutflow > 0 
+    ? trends.filter(t => t.change !== null && t.change < 0).sort((a, b) => a.change - b.change).slice(0, 3)
+    : []
 
   const merchantTotals = {}
-  for (const sp of splits) {
+  for (const sp of outflowSplits) {
     const m = sp.transaction.merchantName
-    merchantTotals[m] = (merchantTotals[m] ?? 0) + sp.amount
+    merchantTotals[m] = (merchantTotals[m] ?? 0) + Math.abs(sp.amount)
   }
   const topMerchants = Object.entries(merchantTotals)
     .sort(([, a], [, b]) => b - a)
     .slice(0, 3)
     .map(([merchantName, amount]) => ({ merchantName, amount }))
 
-  const topTransactions = splits.slice(0, 15).map(sp => ({
+  const topTransactions = sortedSplits.slice(0, 15).map(sp => ({
     id: sp.transaction.id,
     date: sp.transaction.date,
     merchantName: sp.transaction.merchantName,
@@ -139,7 +149,7 @@ export async function GET(request) {
   }))
 
   return NextResponse.json({
-    summary: { totalSpend, biggestTransaction, mostUsedTag },
+    summary: { totalSpend: totalOutflow, biggestTransaction, mostUsedTag },
     spendByTag,
     spendOverTime,
     tagTrends: { increases, decreases },

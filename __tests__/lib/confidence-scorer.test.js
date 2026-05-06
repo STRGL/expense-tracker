@@ -8,9 +8,21 @@ describe("computeBatchStats", () => {
     expect(stats.dominantYear).toBeNull()
   })
 
-  it("computes mean correctly", () => {
+  it("computes mean correctly from positive amounts", () => {
     const rows = [{ amount: 10 }, { amount: 20 }, { amount: 30 }]
     expect(computeBatchStats(rows).mean).toBe(20)
+  })
+
+  it("uses absolute values so credits do not skew the mean", () => {
+    // Without abs: mean = (10 + 20 - 15) / 3 = 5
+    // With abs:    mean = (10 + 20 + 15) / 3 = 15
+    const rows = [{ amount: 10 }, { amount: 20 }, { amount: -15 }]
+    expect(computeBatchStats(rows).mean).toBeCloseTo(15)
+  })
+
+  it("ignores zero amounts in stats calculation", () => {
+    const rows = [{ amount: 10 }, { amount: 20 }, { amount: 0 }]
+    expect(computeBatchStats(rows).mean).toBeCloseTo(15)
   })
 
   it("identifies the dominant year from dates", () => {
@@ -80,5 +92,18 @@ describe("scoreRow", () => {
   it("ignores fuseScore of null (no aliases to match against)", () => {
     const row = { amount: 50, date: new Date("2026-01-15"), isDuplicate: false }
     expect(scoreRow(row, stats, null).level).toBe("green")
+  })
+
+  it("scores a credit (negative amount) the same as a debit of equal size", () => {
+    const debit  = { amount:  75, date: new Date("2026-01-15"), isDuplicate: false }
+    const credit = { amount: -75, date: new Date("2026-01-15"), isDuplicate: false }
+    expect(scoreRow(debit, stats, null).level).toBe(scoreRow(credit, stats, null).level)
+  })
+
+  it("flags a large credit as an outlier the same as a large debit", () => {
+    const row = { amount: -200, date: new Date("2026-01-15"), isDuplicate: false }
+    const result = scoreRow(row, stats, null)
+    expect(result.level).toBe("red")
+    expect(result.reasons).toContain("amount_outlier")
   })
 })

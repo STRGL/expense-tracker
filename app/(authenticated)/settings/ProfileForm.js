@@ -165,7 +165,7 @@ export default function ProfileForm() {
                 aria-pressed={accent === name}
                 onClick={() => handleAccentChange(name)}
                 className={cn(
-                  "w-8 h-8 rounded-full transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                  "w-8 h-8 rounded-full transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 cursor-pointer",
                   accent === name && "ring-2 ring-offset-2 ring-offset-background ring-foreground"
                 )}
                 style={{ backgroundColor: colour }}

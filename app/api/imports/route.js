@@ -30,7 +30,7 @@ export async function POST(request) {
   const { session, error } = await requireAuth()
   if (error) return error
 
-  const { csvText, dateColumn, merchantColumn, amountColumn, bankName } = await request.json()
+  const { csvText, dateColumn, merchantColumn, amountColumn, creditColumn, invertSigns, bankName } = await request.json()
 
   if (!csvText || !dateColumn || !merchantColumn || !amountColumn) {
     return NextResponse.json(
@@ -44,6 +44,9 @@ export async function POST(request) {
 
   if (![dateColumn, merchantColumn, amountColumn].every(c => headers.includes(c))) {
     return NextResponse.json({ error: "One or more specified columns not found in CSV headers" }, { status: 400 })
+  }
+  if (creditColumn && !headers.includes(creditColumn)) {
+    return NextResponse.json({ error: "Credit column not found in CSV headers" }, { status: 400 })
   }
 
   const dateSamples = rows.slice(0, 10).map(r => r[dateColumn]).filter(Boolean)
@@ -66,10 +69,32 @@ export async function POST(request) {
     ? new Fuse(aliases, { keys: ["rawName", "niceName"], threshold: 0.5, includeScore: true })
     : null
 
-  const parsedRows = rows.map(r => ({
-    amount: parseFloat(r[amountColumn]),
-    date: parseDate(r[dateColumn], dateFormat),
-  }))
+  const parsedRows = rows.map(r => {
+    let amount
+    let isDual = false
+    if (creditColumn) {
+      const debit = parseFloat(r[amountColumn])
+      const credit = parseFloat(r[creditColumn])
+      if (isNaN(debit) && isNaN(credit)) {
+        amount = NaN
+      } else {
+        const dVal = isNaN(debit) ? 0 : debit
+        const cVal = isNaN(credit) ? 0 : credit
+        amount = cVal - dVal
+        if (dVal !== 0 && cVal !== 0) isDual = true
+      }
+    } else {
+      amount = parseFloat(r[amountColumn])
+    }
+
+    if (invertSigns && !isNaN(amount)) amount *= -1
+
+    return { 
+      amount, 
+      date: parseDate(r[dateColumn], dateFormat),
+      isDual
+    }
+  })
   const batchStats = computeBatchStats(parsedRows)
 
   const batch = await prisma.$transaction(async (tx) => {
@@ -78,7 +103,13 @@ export async function POST(request) {
         uploadedById: session.user.id,
         fileName: "upload.csv",
         bankName: bankName?.trim() || null,
-        columnMapping: JSON.stringify({ date: dateColumn, merchant: merchantColumn, amount: amountColumn }),
+        columnMapping: JSON.stringify({ 
+          date: dateColumn, 
+          merchant: merchantColumn, 
+          amount: amountColumn,
+          credit: creditColumn || null,
+          inverted: !!invertSigns
+        }),
         status: "pending",
       },
     })
@@ -87,8 +118,9 @@ export async function POST(request) {
       const row = rows[i]
       const rawMerchant = row[merchantColumn] ?? ""
       const normalizedMerchant = normalizeMerchant(rawMerchant)
-      const date = parsedRows[i].date
+      const date   = parsedRows[i].date
       const amount = parsedRows[i].amount
+      const isDual = parsedRows[i].isDual
 
       let merchantResolved = rawMerchant
       let fuseScore = null
@@ -122,6 +154,10 @@ export async function POST(request) {
         fuseScore
       )
 
+      if (isDual) {
+        reasons.push("dual_amount_values")
+      }
+
       await tx.importRow.create({
         data: {
           batchId: b.id,
@@ -132,7 +168,7 @@ export async function POST(request) {
           amount: isNaN(amount) ? null : amount,
           tagId,
           splitData: null,
-          confidenceLevel: level,
+          confidenceLevel: isDual || level === "red" ? "red" : level,
           confidenceReasons: JSON.stringify(reasons),
           isDuplicate,
           status: "pending",

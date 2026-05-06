@@ -4,6 +4,7 @@
 import { useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Papa from "papaparse"
+import { Upload } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -20,14 +21,18 @@ export default function UploadForm() {
   const [dateColumn, setDateColumn] = useState("")
   const [merchantColumn, setMerchantColumn] = useState("")
   const [amountColumn, setAmountColumn] = useState("")
+  const [creditColumn, setCreditColumn] = useState("")
+  const [invertSigns, setInvertSigns] = useState(false)
   const [detectedFormat, setDetectedFormat] = useState("")
   const [dateFormat, setDateFormat] = useState("")
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState("")
+  const [fileName, setFileName] = useState("")
 
   function handleFile(e) {
     const file = e.target.files?.[0]
     if (!file) return
+    setFileName(file.name)
     const reader = new FileReader()
     reader.onload = (ev) => {
       const text = ev.target.result
@@ -65,7 +70,15 @@ export default function UploadForm() {
     const res = await fetch("/api/imports", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ csvText, dateColumn, merchantColumn, amountColumn, bankName: bankName || null }),
+      body: JSON.stringify({ 
+        csvText, 
+        dateColumn, 
+        merchantColumn, 
+        amountColumn, 
+        creditColumn: creditColumn || null, 
+        invertSigns,
+        bankName: bankName || null 
+      }),
     })
     const data = await res.json()
     setUploading(false)
@@ -81,9 +94,32 @@ export default function UploadForm() {
           <CardDescription>Download your statement from your bank and upload it here.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label htmlFor="file">CSV file</Label>
-            <Input id="file" type="file" accept=".csv,text/csv" ref={fileRef} onChange={handleFile} />
+            <div className="flex items-center gap-3">
+              <Input
+                id="file"
+                type="file"
+                accept=".csv,text/csv"
+                ref={fileRef}
+                onChange={handleFile}
+                className="hidden"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => fileRef.current?.click()}
+                className="w-full sm:w-auto"
+              >
+                <Upload className="mr-2 h-4 w-4" />
+                {fileName ? "Change file" : "Choose CSV file"}
+              </Button>
+              {fileName && (
+                <span className="text-sm text-muted-foreground truncate italic">
+                  {fileName}
+                </span>
+              )}
+            </div>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="bankName">Bank name <span className="text-muted-foreground text-xs">(optional — saves column mapping for next time)</span></Label>
@@ -127,7 +163,7 @@ export default function UploadForm() {
               {[
                 { label: "Date column", value: dateColumn, onChange: handleDateColumnChange },
                 { label: "Merchant column", value: merchantColumn, onChange: setMerchantColumn },
-                { label: "Amount column", value: amountColumn, onChange: setAmountColumn },
+                { label: "Debit / Money Out column", value: amountColumn, onChange: setAmountColumn },
               ].map(({ label, value, onChange }) => (
                 <div key={label} className="space-y-1.5">
                   <Label>{label}</Label>
@@ -141,6 +177,33 @@ export default function UploadForm() {
                   </select>
                 </div>
               ))}
+
+              <div className="space-y-1.5">
+                <Label>
+                  Credit / Money In column <span className="text-muted-foreground text-xs">(optional — select if your bank uses separate debit and credit columns)</span>
+                </Label>
+                <select
+                  className="w-full h-8 rounded-md border bg-background px-2 text-sm"
+                  value={creditColumn}
+                  onChange={e => setCreditColumn(e.target.value)}
+                >
+                  <option value="">— none (single amount column) —</option>
+                  {headers.map(h => <option key={h} value={h}>{h}</option>)}
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  id="invertSigns"
+                  type="checkbox"
+                  checked={invertSigns}
+                  onChange={e => setInvertSigns(e.target.checked)}
+                  className="h-4 w-4"
+                />
+                <Label htmlFor="invertSigns" className="font-normal cursor-pointer text-sm">
+                  Invert signs <span className="text-muted-foreground text-xs">(Flip positive to negative and vice versa)</span>
+                </Label>
+              </div>
 
               {detectedFormat && (
                 <div className="space-y-1.5">

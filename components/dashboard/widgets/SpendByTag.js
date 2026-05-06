@@ -58,10 +58,11 @@ export default function SpendByTag({ data, chartType = "donut" }) {
           {chartType === "bar" ? (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
-                <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-                <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `£${v}`} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                <XAxis dataKey="name" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `£${v}`} axisLine={false} tickLine={false} />
                 <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="value" onClick={d => { if (!drillTarget) setDrillTarget(d.tagId) }}>
+                <Bar dataKey="value" radius={[4, 4, 0, 0]} onClick={d => { if (!drillTarget) setDrillTarget(d.tagId) }}>
                   {chartData.map((entry) => (
                     <Cell key={entry.name} fill={entry.fill} />
                   ))}

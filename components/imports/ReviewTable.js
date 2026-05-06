@@ -1,14 +1,13 @@
-// components/imports/ReviewTable.js
 "use client"
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Loader2, AlertCircle, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import ConfidenceDot from "@/components/transactions/ConfidenceDot"
 import ImportRowDialog from "./ImportRowDialog"
+import BulkActionBar from "@/components/ui/BulkActionBar"
 
 function formatDate(d) {
   if (!d) return "—"
@@ -28,7 +27,7 @@ export default function ReviewTable({ batchId }) {
   const [selected, setSelected] = useState(null)
   const [filter, setFilter] = useState("all")
   const [allTags, setAllTags] = useState([])
-  const [bulkTagId, setBulkTagId] = useState("")
+  const [selectedIds, setSelectedIds] = useState(new Set())
   const [confirming, setConfirming] = useState(false)
 
   async function load() {
@@ -50,6 +49,7 @@ export default function ReviewTable({ batchId }) {
       const flat = []
       for (const p of tagTree) { flat.push(p); for (const c of p.children) flat.push(c) }
       setAllTags(flat)
+      setSelectedIds(new Set())
     } catch {
       setError("Something went wrong while loading the import. Please try again.")
     } finally {
@@ -59,16 +59,41 @@ export default function ReviewTable({ batchId }) {
 
   useEffect(() => { load() }, [batchId])
 
-  async function handleBulkTag() {
-    if (!bulkTagId || !batch) return
-    const untaggedPending = batch.rows.filter(r => !r.tagId && r.status === "pending")
-    await Promise.all(untaggedPending.map(r =>
-      fetch(`/api/imports/${batchId}/rows/${r.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tagId: bulkTagId }),
-      })
-    ))
+  async function handleBulkTag(tagId) {
+    if (!batch) return
+    await fetch(`/api/imports/${batchId}/rows/bulk`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ 
+        rowIds: Array.from(selectedIds),
+        data: { tagId }
+      }),
+    })
+    load()
+  }
+
+  async function handleBulkRename(merchantResolved) {
+    if (!batch) return
+    await fetch(`/api/imports/${batchId}/rows/bulk`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ 
+        rowIds: Array.from(selectedIds),
+        data: { merchantResolved }
+      }),
+    })
+    load()
+  }
+
+  async function handleBulkSkip() {
+    if (!batch) return
+    await fetch(`/api/imports/${batchId}/rows/bulk`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ 
+        rowIds: Array.from(selectedIds)
+      }),
+    })
     load()
   }
 
@@ -105,6 +130,21 @@ export default function ReviewTable({ batchId }) {
   const redPendingCount = pendingRows.filter(r => r.confidenceLevel === "red").length
   const canConfirm = batch.status !== "confirmed" && pendingRows.length > 0
 
+  function toggleSelection(id) {
+    const next = new Set(selectedIds)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    setSelectedIds(next)
+  }
+
+  function toggleSelectAll() {
+    if (selectedIds.size === filteredRows.length && filteredRows.length > 0) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(filteredRows.map(r => r.id)))
+    }
+  }
+
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-3 text-sm text-muted-foreground">
@@ -128,33 +168,13 @@ export default function ReviewTable({ batchId }) {
           <option value="green">Green only</option>
         </select>
 
-        <div className="flex items-center gap-1">
-          <Select value={bulkTagId || "none"} onValueChange={v => setBulkTagId(v === "none" ? "" : v)}>
-            <SelectTrigger className="h-8 text-sm w-44"><SelectValue placeholder="Bulk tag untagged rows" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">— select tag —</SelectItem>
-              {allTags.map(t => (
-                <SelectItem key={t.id} value={t.id}>
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: t.colour }} />
-                    {t.parentId ? "  " : ""}{t.name}
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button size="sm" variant="outline" className="h-8 text-xs" onClick={handleBulkTag} disabled={!bulkTagId}>
-            Apply
-          </Button>
-        </div>
-
         <div className="ml-auto flex items-center gap-2">
           {redPendingCount > 0 && (
             <p className="text-xs text-destructive">
               {redPendingCount} red row{redPendingCount !== 1 ? "s" : ""} need attention
             </p>
           )}
-          <Button size="sm" onClick={handleConfirm} disabled={!canConfirm || confirming}>
+          <Button size="sm" onClick={handleConfirm} disabled={!canConfirm || confirming} className="cursor-pointer">
             {confirming ? "Confirming..." : `Confirm ${pendingRows.length} rows`}
           </Button>
         </div>
@@ -164,7 +184,15 @@ export default function ReviewTable({ batchId }) {
         <table className="w-full text-sm">
           <thead className="bg-muted/50 border-b">
             <tr>
-              <th className="w-4 px-3 py-2" />
+              <th className="w-8 px-3 py-2 text-center">
+                <input
+                  type="checkbox"
+                  className="h-3.5 w-3.5"
+                  checked={selectedIds.size > 0 && selectedIds.size === filteredRows.length}
+                  onChange={toggleSelectAll}
+                />
+              </th>
+              <th className="w-4 px-1 py-2" />
               <th className="text-left px-3 py-2 font-medium">Date</th>
               <th className="text-left px-3 py-2 font-medium">Merchant</th>
               <th className="text-left px-3 py-2 font-medium">Tag</th>
@@ -182,10 +210,18 @@ export default function ReviewTable({ batchId }) {
               return (
                 <tr
                   key={row.id}
-                  className={`cursor-pointer transition-colors hover:bg-muted/30 ${row.status === "skipped" ? "opacity-50" : ""}`}
+                  className={`cursor-pointer transition-colors hover:bg-muted/30 ${row.status === "skipped" ? "opacity-50" : ""} ${selectedIds.has(row.id) ? "bg-muted/50" : ""}`}
                   onClick={() => setSelected(row)}
                 >
-                  <td className="px-3 py-2.5">
+                  <td className="px-3 py-2.5 text-center" onClick={e => e.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      className="h-3.5 w-3.5"
+                      checked={selectedIds.has(row.id)}
+                      onChange={() => toggleSelection(row.id)}
+                    />
+                  </td>
+                  <td className="px-1 py-2.5">
                     <ConfidenceDot level={row.confidenceLevel} />
                   </td>
                   <td className="px-3 py-2.5 text-muted-foreground whitespace-nowrap">
@@ -243,6 +279,15 @@ export default function ReviewTable({ batchId }) {
           </tbody>
         </table>
       </div>
+
+      <BulkActionBar
+        selectedCount={selectedIds.size}
+        onClear={() => setSelectedIds(new Set())}
+        onDelete={handleBulkSkip}
+        onTagChange={handleBulkTag}
+        onRenameMerchant={handleBulkRename}
+        tags={allTags}
+      />
 
       {selected && (
         <ImportRowDialog

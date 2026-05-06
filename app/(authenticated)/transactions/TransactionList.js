@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import ConfidenceDot from "@/components/transactions/ConfidenceDot"
 import TransactionDialog from "@/components/transactions/TransactionDialog"
+import BulkActionBar from "@/components/ui/BulkActionBar"
 
 function formatDate(dateStr) {
   return new Date(dateStr).toLocaleDateString("en-GB", {
@@ -24,6 +25,7 @@ export default function TransactionList() {
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState(null)
   const [tags, setTags] = useState([])
+  const [selectedIds, setSelectedIds] = useState(new Set())
   const searchParams = useSearchParams()
   const [filters, setFilters] = useState({
     merchant: searchParams.get("merchant") ?? "",
@@ -53,6 +55,7 @@ export default function TransactionList() {
     setTransactions(data.transactions || [])
     setTotal(data.total || 0)
     setLoading(false)
+    setSelectedIds(new Set())
   }, [filters])
 
   useEffect(() => { load() }, [load])
@@ -68,7 +71,6 @@ export default function TransactionList() {
   function handleFilterChange(updates) {
     setFilters((f) => {
       const next = { ...f, ...updates }
-      // Reset page to 1 if any filter other than page changes
       if (!updates.page) {
         next.page = 1
       }
@@ -86,6 +88,32 @@ export default function TransactionList() {
   function SortIcon({ field }) {
     if (filters.sortBy !== field) return <span className="text-muted-foreground/40 ml-1">↕</span>
     return <span className="ml-1">{filters.sortOrder === "asc" ? "↑" : "↓"}</span>
+  }
+
+  function toggleSelection(id) {
+    const next = new Set(selectedIds)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    setSelectedIds(next)
+  }
+
+  function toggleSelectAll() {
+    if (selectedIds.size === transactions.length && transactions.length > 0) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(transactions.map(tx => tx.id)))
+    }
+  }
+
+  async function handleBulkDelete() {
+    const res = await fetch("/api/transactions/bulk", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: Array.from(selectedIds) }),
+    })
+    if (res.ok) {
+      load()
+    }
   }
 
   const hasFilters = Object.entries(filters).some(([k, v]) => !["sortBy", "sortOrder", "page", "limit"].includes(k) && v)
@@ -175,7 +203,15 @@ export default function TransactionList() {
             <table className="w-full text-sm">
               <thead className="bg-muted/50 border-b">
                 <tr>
-                  <th className="w-4 px-3 py-2" />
+                  <th className="w-8 px-3 py-2 text-center">
+                    <input
+                      type="checkbox"
+                      className="h-3.5 w-3.5"
+                      checked={selectedIds.size > 0 && selectedIds.size === transactions.length}
+                      onChange={toggleSelectAll}
+                    />
+                  </th>
+                  <th className="w-4 px-1 py-2" />
                   <th
                     className="text-left px-3 py-2 font-medium cursor-pointer hover:text-foreground"
                     onClick={() => handleSortChange("date")}
@@ -202,10 +238,18 @@ export default function TransactionList() {
                 {transactions.map((tx) => (
                   <tr
                     key={tx.id}
-                    className="hover:bg-muted/30 cursor-pointer transition-colors"
+                    className={`hover:bg-muted/30 cursor-pointer transition-colors ${selectedIds.has(tx.id) ? "bg-muted/50" : ""}`}
                     onClick={() => setSelected(tx)}
                   >
-                    <td className="px-3 py-2.5">
+                    <td className="px-3 py-2.5 text-center" onClick={e => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        className="h-3.5 w-3.5"
+                        checked={selectedIds.has(tx.id)}
+                        onChange={() => toggleSelection(tx.id)}
+                      />
+                    </td>
+                    <td className="px-1 py-2.5">
                       <ConfidenceDot level={tx.confidenceLevel} />
                     </td>
                     <td className="px-3 py-2.5 text-muted-foreground whitespace-nowrap">
@@ -266,7 +310,6 @@ export default function TransactionList() {
               <div className="flex items-center gap-1 px-2">
                 {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                   let p = i + 1
-                  // Simple sliding window for page numbers
                   if (totalPages > 5 && filters.page > 3) {
                     p = filters.page - 2 + i
                     if (p + (4 - i) > totalPages) p = totalPages - 4 + i
@@ -299,6 +342,13 @@ export default function TransactionList() {
           </div>
         </div>
       )}
+
+      <BulkActionBar
+        selectedCount={selectedIds.size}
+        onClear={() => setSelectedIds(new Set())}
+        onDelete={handleBulkDelete}
+        tags={tags}
+      />
 
       {selected && (
         <TransactionDialog

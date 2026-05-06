@@ -22,6 +22,9 @@ const NAV_ITEMS = [
   { href: "/transactions", label: "Transactions", icon: ArrowLeftRight },
   { href: "/imports",      label: "Import",       icon: Upload },
   { href: "/search",       label: "Search",       icon: Search },
+]
+
+const BOTTOM_ITEMS = [
   { href: "/settings",     label: "Settings",     icon: Settings },
 ]
 
@@ -45,9 +48,11 @@ export default function Sidebar({ collapsed, onToggle, isAdmin }) {
           collapsed ? "justify-center" : "justify-between"
         )}>
           {!collapsed && (
-            <span className="font-semibold text-sm tracking-tight text-sidebar-foreground">
-              Expense Tracker
-            </span>
+            <Link href="/dashboard" className="hover:opacity-80 transition-opacity">
+              <h1 className="font-semibold text-sm tracking-tight text-sidebar-foreground">
+                Expense Tracker
+              </h1>
+            </Link>
           )}
           <Button
             variant="ghost"
@@ -63,15 +68,15 @@ export default function Sidebar({ collapsed, onToggle, isAdmin }) {
           {NAV_ITEMS.map((item) => (
             <NavItem key={item.href} item={item} pathname={pathname} collapsed={collapsed} />
           ))}
+        </nav>
 
-          {isAdmin && (
-            <>
-              <div className={cn("my-2 border-t border-sidebar-border", collapsed && "mx-1")} />
-              {ADMIN_ITEMS.map((item) => (
-                <NavItem key={item.href} item={item} pathname={pathname} collapsed={collapsed} />
-              ))}
-            </>
-          )}
+        <nav className="py-2 px-1.5 space-y-0.5 border-t border-sidebar-border">
+          {isAdmin && ADMIN_ITEMS.map((item) => (
+            <NavItem key={item.href} item={item} pathname={pathname} collapsed={collapsed} />
+          ))}
+          {BOTTOM_ITEMS.map((item) => (
+            <NavItem key={item.href} item={item} pathname={pathname} collapsed={collapsed} />
+          ))}
         </nav>
       </aside>
     </TooltipProvider>
