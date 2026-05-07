@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import Fuse from "fuse.js"
+import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -11,15 +12,20 @@ import SplitPanel from "./SplitPanel"
 
 export default function TransactionForm({ initial, currentUserId, onSaved, onCancel }) {
   const isEdit = !!initial
+  // Determine initial type from sign of existing amount
+  const initialIsCredit = (initial?.totalAmount ?? 0) < 0
+  const [transactionType, setTransactionType] = useState(initialIsCredit ? "credit" : "debit")
   const [form, setForm] = useState({
     date: initial?.date ? new Date(initial.date).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
     merchantRaw: initial?.merchantRaw ?? "",
     merchantName: initial?.merchantName ?? "",
-    totalAmount: initial?.totalAmount ?? "",
+    totalAmount: initial?.totalAmount ? String(Math.abs(initial.totalAmount)) : "",
     notes: initial?.notes ?? "",
   })
   const [splits, setSplits] = useState(
-    initial?.splits ?? [{ userId: currentUserId, amount: Number(initial?.totalAmount ?? 0), splitMethod: "equal", tagId: null }]
+    initial?.splits
+      ? initial.splits.map(s => ({ ...s, amount: Math.abs(s.amount) }))
+      : [{ userId: currentUserId, amount: Math.abs(Number(initial?.totalAmount ?? 0)), splitMethod: "equal", tagId: null }]
   )
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
@@ -63,8 +69,10 @@ export default function TransactionForm({ initial, currentUserId, onSaved, onCan
       return
     }
 
+    const absAmount = Math.abs(Number(form.totalAmount))
+    const signedTotal = transactionType === "debit" ? -absAmount : absAmount
     const splitSum = splits.reduce((s, sp) => s + sp.amount, 0)
-    if (Math.abs(splitSum - Number(form.totalAmount)) > 0.011) {
+    if (Math.abs(splitSum - absAmount) > 0.011) {
       setError("Split amounts must add up to the total amount.")
       return
     }
@@ -73,13 +81,18 @@ export default function TransactionForm({ initial, currentUserId, onSaved, onCan
     const url = isEdit ? `/api/transactions/${initial.id}` : "/api/transactions"
     const method = isEdit ? "PUT" : "POST"
 
+    const signedSplits = splits.map(s => ({
+      ...s,
+      amount: transactionType === "debit" ? -Math.abs(s.amount) : Math.abs(s.amount),
+    }))
+
     const res = await fetch(url, {
       method,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...form,
-        totalAmount: Number(form.totalAmount),
-        splits,
+        totalAmount: signedTotal,
+        splits: signedSplits,
       }),
     })
     const data = await res.json()
@@ -107,18 +120,33 @@ export default function TransactionForm({ initial, currentUserId, onSaved, onCan
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="amount">Amount (£)</Label>
-          <Input
-            id="amount"
-            type="number"
-            min="0.01"
-            step="0.01"
-            required
-            placeholder="0.00"
-            value={form.totalAmount}
-            onChange={(e) => setForm((f) => ({ ...f, totalAmount: e.target.value }))}
-          />
+          <Label>Type</Label>
+          <div className="flex h-8 rounded-md border overflow-hidden text-sm font-medium">
+            <button
+              type="button"
+              className={cn("flex-1 transition-colors", transactionType === "debit" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted")}
+              onClick={() => setTransactionType("debit")}
+            >Expense</button>
+            <button
+              type="button"
+              className={cn("flex-1 border-l transition-colors", transactionType === "credit" ? "bg-green-600 text-white" : "bg-background text-muted-foreground hover:bg-muted")}
+              onClick={() => setTransactionType("credit")}
+            >Income / Credit</button>
+          </div>
         </div>
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="amount">Amount (£)</Label>
+        <Input
+          id="amount"
+          type="number"
+          min="0.01"
+          step="0.01"
+          required
+          placeholder="0.00"
+          value={form.totalAmount}
+          onChange={(e) => setForm((f) => ({ ...f, totalAmount: e.target.value }))}
+        />
       </div>
 
       <div className="space-y-1.5 relative">

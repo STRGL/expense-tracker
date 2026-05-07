@@ -16,7 +16,18 @@ function formatDate(d) {
 
 function formatAmount(a) {
   if (a == null) return "—"
-  return new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(a)
+  return new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(Math.abs(a))
+}
+
+function AmountCell({ amount }) {
+  if (amount == null) return <span className="text-muted-foreground">—</span>
+  const isCredit = amount > 0
+  return (
+    <span className={isCredit ? "text-green-600 font-medium" : ""}>
+      {isCredit ? "+" : "-"}{formatAmount(amount)}
+      {isCredit && <span className="ml-1 text-xs font-normal">CR</span>}
+    </span>
+  )
 }
 
 export default function ReviewTable({ batchId }) {
@@ -268,7 +279,7 @@ export default function ReviewTable({ batchId }) {
                       <span className="text-xs text-muted-foreground">Untagged</span>
                     )}
                   </td>
-                  <td className="px-3 py-2.5 text-right tabular-nums">{formatAmount(row.amount)}</td>
+                  <td className="px-3 py-2.5 text-right tabular-nums"><AmountCell amount={row.amount} /></td>
                   <td className="px-3 py-2.5">
                     {row.status === "skipped" && <Badge variant="outline" className="text-xs">Skipped</Badge>}
                     {row.status === "confirmed" && <Badge variant="secondary" className="text-xs">Confirmed</Badge>}

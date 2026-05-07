@@ -16,7 +16,17 @@ function formatDate(dateStr) {
 }
 
 function formatAmount(amount) {
-  return new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(amount)
+  return new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(Math.abs(amount))
+}
+
+function AmountCell({ amount, className = "" }) {
+  const isCredit = amount > 0
+  return (
+    <span className={`${isCredit ? "text-green-600" : ""} ${className}`}>
+      {isCredit ? "+" : "-"}{formatAmount(amount)}
+      {isCredit && <span className="ml-1 text-xs font-normal">CR</span>}
+    </span>
+  )
 }
 
 export default function TransactionList() {
@@ -272,18 +282,18 @@ export default function TransactionList() {
                       )}
                     </td>
                     <td className="px-3 py-2.5 text-right font-medium tabular-nums">
-                      {formatAmount(tx.myAmount)}
+                      <AmountCell amount={tx.myAmount} />
                     </td>
                     <td className="px-3 py-2.5 text-right text-muted-foreground tabular-nums">
                       {tx.splitCount > 1 ? (
                         <span className="flex items-center justify-end gap-1.5">
-                          {formatAmount(tx.totalAmount)}
+                          <AmountCell amount={tx.totalAmount} />
                           <Badge variant="outline" className="text-xs py-0 h-4">
                             ÷{tx.splitCount}
                           </Badge>
                         </span>
                       ) : (
-                        formatAmount(tx.totalAmount)
+                        <AmountCell amount={tx.totalAmount} />
                       )}
                     </td>
                   </tr>

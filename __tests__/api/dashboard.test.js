@@ -43,8 +43,8 @@ describe("GET /api/dashboard", () => {
   it("returns dashboard data with correct total spend", async () => {
     auth.mockResolvedValue(session)
     const currentSplits = [
-      makeSplit(100, "Groceries", "#22c55e", "Tesco", "2026-04-01"),
-      makeSplit(50, "Transport", "#3b82f6", "TfL", "2026-04-15"),
+      makeSplit(-100, "Groceries", "#22c55e", "Tesco", "2026-04-01"),
+      makeSplit(-50, "Transport", "#3b82f6", "TfL", "2026-04-15"),
     ]
     prisma.transactionSplit.findMany
       .mockResolvedValueOnce(currentSplits)
