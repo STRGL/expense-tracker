@@ -50,10 +50,10 @@ describe("GET /api/search", () => {
         date: new Date("2026-04-01"),
         merchantName: "Amazon",
         merchantRaw: "AMZN MKTPL",
-        totalAmount: 50.0,
+        totalAmount: -50.0,
         createdById: "u1",
         importBatchId: null,
-        myAmount: 50.0,
+        myAmount: -50.0,
         myTagId: "t1",
         tagName: "Groceries",
         tagColour: "#22c55e",
@@ -66,8 +66,19 @@ describe("GET /api/search", () => {
     expect(res.status).toBe(200)
     expect(body).toHaveLength(1)
     expect(body[0].merchantName).toBe("Amazon")
+    expect(body[0].myAmount).toBe(-50.0)
     expect(body[0].isOwner).toBe(true)
     expect(body[0].myTag).toEqual({ name: "Groceries", colour: "#22c55e" })
     expect(prisma.$queryRaw).toHaveBeenCalledTimes(1)
+  })
+
+  it("returns 500 with error json when the FTS query fails", async () => {
+    auth.mockResolvedValue(session)
+    prisma.$queryRaw.mockRejectedValue(new Error("no such column: fts"))
+    const req = new Request("http://localhost/api/search?q=amazon")
+    const res = await GET(req)
+    const body = await res.json()
+    expect(res.status).toBe(500)
+    expect(body.error).toBeDefined()
   })
 })

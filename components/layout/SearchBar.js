@@ -33,8 +33,12 @@ export default function SearchBar() {
       try {
         const res = await fetch(`/api/search?q=${encodeURIComponent(q)}&limit=8`)
         const data = await res.json()
-        setResults(data)
-        setOpen(true)
+        if (Array.isArray(data)) {
+          setResults(data)
+          setOpen(true)
+        }
+      } catch {
+        // silently fail — dropdown stays closed
       } finally {
         setLoading(false)
       }

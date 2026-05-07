@@ -49,18 +49,23 @@ export default function SearchPage() {
   const runSearch = useCallback(async (q, f) => {
     if (!q.trim()) { setResults([]); return }
     setLoading(true)
-    const params = new URLSearchParams({ q, limit: "50" })
-    if (f.dateFrom) params.set("dateFrom", f.dateFrom)
-    if (f.dateTo) params.set("dateTo", f.dateTo)
-    if (f.tagId) params.set("tagId", f.tagId)
-    if (f.minAmount) params.set("minAmount", f.minAmount)
-    if (f.maxAmount) params.set("maxAmount", f.maxAmount)
-    if (f.source) params.set("source", f.source)
-    if (f.split) params.set("split", f.split)
-    const res = await fetch(`/api/search?${params}`)
-    const data = await res.json()
-    setResults(data)
-    setLoading(false)
+    try {
+      const params = new URLSearchParams({ q, limit: "50" })
+      if (f.dateFrom) params.set("dateFrom", f.dateFrom)
+      if (f.dateTo) params.set("dateTo", f.dateTo)
+      if (f.tagId) params.set("tagId", f.tagId)
+      if (f.minAmount) params.set("minAmount", f.minAmount)
+      if (f.maxAmount) params.set("maxAmount", f.maxAmount)
+      if (f.source) params.set("source", f.source)
+      if (f.split) params.set("split", f.split)
+      const res = await fetch(`/api/search?${params}`)
+      const data = await res.json()
+      setResults(Array.isArray(data) ? data : [])
+    } catch {
+      setResults([])
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
   useEffect(() => {
