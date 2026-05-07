@@ -185,7 +185,7 @@ export default function ReviewTable({ batchId }) {
               {redPendingCount} red row{redPendingCount !== 1 ? "s" : ""} need attention
             </p>
           )}
-          <Button size="sm" onClick={handleConfirm} disabled={!canConfirm || confirming} className="cursor-pointer">
+          <Button size="sm" onClick={handleConfirm} disabled={!canConfirm || confirming}>
             {confirming ? "Confirming..." : `Confirm ${pendingRows.length} rows`}
           </Button>
         </div>
