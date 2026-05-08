@@ -1,8 +1,11 @@
-// lib/api-helpers.js
 import { NextResponse } from "next/server"
 import { auth } from "@/auth"
+import type { Session } from "next-auth"
 
-export async function requireAuth() {
+type AuthSuccess = { session: Session; error: null }
+type AuthError = { session: null; error: NextResponse }
+
+export async function requireAuth(): Promise<AuthSuccess | AuthError> {
   const session = await auth()
   if (!session) {
     return { session: null, error: NextResponse.json({ error: "Unauthorised" }, { status: 401 }) }
@@ -10,7 +13,7 @@ export async function requireAuth() {
   return { session, error: null }
 }
 
-export async function requireAdmin() {
+export async function requireAdmin(): Promise<AuthSuccess | AuthError> {
   const session = await auth()
   if (!session) {
     return { session: null, error: NextResponse.json({ error: "Unauthorised" }, { status: 401 }) }

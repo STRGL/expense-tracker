@@ -1,0 +1,141 @@
+type CSSVar = string
+
+interface AccentTheme {
+  "--primary": CSSVar
+  "--primary-foreground": CSSVar
+  "--ring": CSSVar
+  "--sidebar-primary": CSSVar
+  "--sidebar-primary-foreground": CSSVar
+  "--sidebar-ring": CSSVar
+  "--chart-1": CSSVar
+  "--chart-2": CSSVar
+  "--chart-3": CSSVar
+  "--chart-4": CSSVar
+  "--chart-5": CSSVar
+}
+
+export type AccentThemeKey = "blue" | "violet" | "green" | "orange" | "rose" | "red" | "yellow" | "zinc"
+
+export interface AccentSwatch {
+  name: AccentThemeKey
+  label: string
+  colour: string
+}
+
+export const ACCENT_THEMES: Record<AccentThemeKey, AccentTheme> = {
+  blue: {
+    "--primary": "oklch(0.546 0.245 262.881)",
+    "--primary-foreground": "oklch(0.985 0 0)",
+    "--ring": "oklch(0.546 0.245 262.881)",
+    "--sidebar-primary": "oklch(0.546 0.245 262.881)",
+    "--sidebar-primary-foreground": "oklch(0.985 0 0)",
+    "--sidebar-ring": "oklch(0.546 0.245 262.881)",
+    "--chart-1": "oklch(0.546 0.245 262.881)",
+    "--chart-2": "oklch(0.696 0.17 162.48)",
+    "--chart-3": "oklch(0.541 0.281 293.009)",
+    "--chart-4": "oklch(0.75 0.183 55.934)",
+    "--chart-5": "oklch(0.645 0.246 16.439)",
+  },
+  violet: {
+    "--primary": "oklch(0.541 0.281 293.009)",
+    "--primary-foreground": "oklch(0.985 0 0)",
+    "--ring": "oklch(0.541 0.281 293.009)",
+    "--sidebar-primary": "oklch(0.541 0.281 293.009)",
+    "--sidebar-primary-foreground": "oklch(0.985 0 0)",
+    "--sidebar-ring": "oklch(0.541 0.281 293.009)",
+    "--chart-1": "oklch(0.541 0.281 293.009)",
+    "--chart-2": "oklch(0.606 0.232 264.372)",
+    "--chart-3": "oklch(0.702 0.227 321.454)",
+    "--chart-4": "oklch(0.451 0.252 303.428)",
+    "--chart-5": "oklch(0.656 0.194 337.198)",
+  },
+  green: {
+    "--primary": "oklch(0.527 0.154 150.069)",
+    "--primary-foreground": "oklch(0.985 0 0)",
+    "--ring": "oklch(0.527 0.154 150.069)",
+    "--sidebar-primary": "oklch(0.527 0.154 150.069)",
+    "--sidebar-primary-foreground": "oklch(0.985 0 0)",
+    "--sidebar-ring": "oklch(0.527 0.154 150.069)",
+    "--chart-1": "oklch(0.527 0.154 150.069)",
+    "--chart-2": "oklch(0.696 0.17 162.48)",
+    "--chart-3": "oklch(0.609 0.173 128.702)",
+    "--chart-4": "oklch(0.782 0.169 192.057)",
+    "--chart-5": "oklch(0.846 0.143 164.978)",
+  },
+  orange: {
+    "--primary": "oklch(0.702 0.191 47.604)",
+    "--primary-foreground": "oklch(0.985 0 0)",
+    "--ring": "oklch(0.702 0.191 47.604)",
+    "--sidebar-primary": "oklch(0.702 0.191 47.604)",
+    "--sidebar-primary-foreground": "oklch(0.985 0 0)",
+    "--sidebar-ring": "oklch(0.702 0.191 47.604)",
+    "--chart-1": "oklch(0.702 0.191 47.604)",
+    "--chart-2": "oklch(0.75 0.183 55.934)",
+    "--chart-3": "oklch(0.795 0.184 86.047)",
+    "--chart-4": "oklch(0.645 0.246 16.439)",
+    "--chart-5": "oklch(0.637 0.237 25.331)",
+  },
+  rose: {
+    "--primary": "oklch(0.645 0.246 16.439)",
+    "--primary-foreground": "oklch(0.985 0 0)",
+    "--ring": "oklch(0.645 0.246 16.439)",
+    "--sidebar-primary": "oklch(0.645 0.246 16.439)",
+    "--sidebar-primary-foreground": "oklch(0.985 0 0)",
+    "--sidebar-ring": "oklch(0.645 0.246 16.439)",
+    "--chart-1": "oklch(0.645 0.246 16.439)",
+    "--chart-2": "oklch(0.702 0.191 47.604)",
+    "--chart-3": "oklch(0.702 0.227 321.454)",
+    "--chart-4": "oklch(0.541 0.281 293.009)",
+    "--chart-5": "oklch(0.656 0.194 337.198)",
+  },
+  red: {
+    "--primary": "oklch(0.577 0.245 27.325)",
+    "--primary-foreground": "oklch(0.985 0 0)",
+    "--ring": "oklch(0.577 0.245 27.325)",
+    "--sidebar-primary": "oklch(0.577 0.245 27.325)",
+    "--sidebar-primary-foreground": "oklch(0.985 0 0)",
+    "--sidebar-ring": "oklch(0.577 0.245 27.325)",
+    "--chart-1": "oklch(0.577 0.245 27.325)",
+    "--chart-2": "oklch(0.645 0.246 16.439)",
+    "--chart-3": "oklch(0.702 0.191 47.604)",
+    "--chart-4": "oklch(0.75 0.183 55.934)",
+    "--chart-5": "oklch(0.702 0.227 321.454)",
+  },
+  yellow: {
+    "--primary": "oklch(0.795 0.184 86.047)",
+    "--primary-foreground": "oklch(0.145 0.005 285.823)",
+    "--ring": "oklch(0.795 0.184 86.047)",
+    "--sidebar-primary": "oklch(0.795 0.184 86.047)",
+    "--sidebar-primary-foreground": "oklch(0.145 0.005 285.823)",
+    "--sidebar-ring": "oklch(0.795 0.184 86.047)",
+    "--chart-1": "oklch(0.795 0.184 86.047)",
+    "--chart-2": "oklch(0.75 0.183 55.934)",
+    "--chart-3": "oklch(0.609 0.173 128.702)",
+    "--chart-4": "oklch(0.702 0.191 47.604)",
+    "--chart-5": "oklch(0.527 0.154 150.069)",
+  },
+  zinc: {
+    "--primary": "oklch(0.21 0.006 285.885)",
+    "--primary-foreground": "oklch(0.985 0.002 286.375)",
+    "--ring": "oklch(0.21 0.006 285.885)",
+    "--sidebar-primary": "oklch(0.501 0.009 264.532)",
+    "--sidebar-primary-foreground": "oklch(0.985 0.002 286.375)",
+    "--sidebar-ring": "oklch(0.501 0.009 264.532)",
+    "--chart-1": "oklch(0.21 0.006 285.885)",
+    "--chart-2": "oklch(0.371 0.006 285.885)",
+    "--chart-3": "oklch(0.501 0.009 264.532)",
+    "--chart-4": "oklch(0.61 0.007 264.532)",
+    "--chart-5": "oklch(0.705 0.015 286.067)",
+  },
+}
+
+export const ACCENT_SWATCHES: AccentSwatch[] = [
+  { name: "blue",   label: "Blue",   colour: "oklch(0.546 0.245 262.881)" },
+  { name: "violet", label: "Violet", colour: "oklch(0.541 0.281 293.009)" },
+  { name: "green",  label: "Green",  colour: "oklch(0.527 0.154 150.069)" },
+  { name: "orange", label: "Orange", colour: "oklch(0.702 0.191 47.604)"  },
+  { name: "rose",   label: "Rose",   colour: "oklch(0.645 0.246 16.439)"  },
+  { name: "red",    label: "Red",    colour: "oklch(0.577 0.245 27.325)"  },
+  { name: "yellow", label: "Yellow", colour: "oklch(0.795 0.184 86.047)"  },
+  { name: "zinc",   label: "Zinc",   colour: "oklch(0.501 0.009 264.532)" },
+]

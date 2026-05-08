@@ -1,18 +1,30 @@
-export function getDefaultPeriod() {
+export type Preset = "monthly" | "quarterly" | "yearly"
+
+export interface Period {
+  preset: Preset
+  year: number
+  month: number
+}
+
+export interface DateRange {
+  dateFrom: Date
+  dateTo: Date
+  label: string
+}
+
+export function getDefaultPeriod(): Period {
   const now = new Date()
   const month = now.getMonth() === 0 ? 11 : now.getMonth() - 1
   const year = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear()
   return { preset: "monthly", year, month }
 }
 
-export function computeDateRange(preset, year, month) {
+export function computeDateRange(preset: Preset, year: number, month: number): DateRange | null {
   if (preset === "monthly") {
     return {
       dateFrom: new Date(year, month, 1),
       dateTo: new Date(year, month + 1, 0, 23, 59, 59, 999),
-      label: new Date(year, month, 1).toLocaleDateString("en-GB", {
-        month: "long", year: "numeric",
-      }),
+      label: new Date(year, month, 1).toLocaleDateString("en-GB", { month: "long", year: "numeric" }),
     }
   }
   if (preset === "quarterly") {
@@ -33,7 +45,12 @@ export function computeDateRange(preset, year, month) {
   return null
 }
 
-export function navigatePeriod(preset, year, month, direction) {
+export function navigatePeriod(
+  preset: Preset,
+  year: number,
+  month: number,
+  direction: 1 | -1
+): { year: number; month: number } {
   if (preset === "monthly") {
     const d = new Date(year, month + direction, 1)
     return { year: d.getFullYear(), month: d.getMonth() }
@@ -50,7 +67,7 @@ export function navigatePeriod(preset, year, month, direction) {
   return { year, month }
 }
 
-export function isAtCurrentMonth(preset, year, month) {
+export function isAtCurrentMonth(preset: Preset, year: number, month: number): boolean {
   const now = new Date()
   if (preset === "monthly") return year === now.getFullYear() && month === now.getMonth()
   if (preset === "quarterly") {

@@ -1,4 +1,23 @@
-export function calculateSplits(totalAmount, method, users) {
+interface SplitUser {
+  id: string
+  wage?: number | null
+}
+
+export interface SplitResult {
+  userId: string
+  amount: number
+}
+
+export interface ProportionalResult {
+  pendingData: boolean
+  splits: SplitResult[]
+}
+
+export function calculateSplits(
+  totalAmount: number,
+  method: "equal" | "proportional",
+  users: SplitUser[]
+): SplitResult[] | ProportionalResult {
   if (!users.length) throw new Error("At least one user required")
 
   if (method === "equal") {
@@ -12,20 +31,13 @@ export function calculateSplits(totalAmount, method, users) {
   }
 
   if (method === "proportional") {
-    const missingWages = users.some((u) => u.wage === null || u.wage === undefined)
+    const missingWages = users.some(u => u.wage === null || u.wage === undefined)
     if (missingWages) {
-      return {
-        pendingData: true,
-        splits: users.map((u) => ({
-          userId: u.id,
-          amount: 0,
-        })),
-      }
+      return { pendingData: true, splits: users.map(u => ({ userId: u.id, amount: 0 })) }
     }
-
     const totalWage = users.reduce((sum, u) => sum + (u.wage ?? 0), 0)
     if (totalWage === 0) throw new Error("Cannot split proportionally: all wages are zero or unset")
-    const shares = users.map((u) => ({
+    const shares: SplitResult[] = users.map(u => ({
       userId: u.id,
       amount: Math.floor(((u.wage ?? 0) / totalWage) * totalAmount * 100) / 100,
     }))
@@ -38,7 +50,10 @@ export function calculateSplits(totalAmount, method, users) {
   throw new Error(`Unknown split method: ${method}`)
 }
 
-export function validateSpecifiedSplits(totalAmount, splits) {
+export function validateSpecifiedSplits(
+  totalAmount: number,
+  splits: Array<{ amount: number }>
+): boolean {
   const sum = splits.reduce((s, sp) => s + sp.amount, 0)
   return Math.abs(sum - totalAmount) < 0.011
 }

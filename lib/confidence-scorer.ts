@@ -1,10 +1,41 @@
-export function computeBatchStats(rows) {
-  // Use absolute values so credits (negative amounts) don't skew outlier detection
+import type { ConfidenceLevel, ConfidenceReason } from "@/types/imports"
+
+export interface BatchStats {
+  mean: number
+  stdDev: number
+  dominantYear: number | null
+}
+
+interface RowInput {
+  amount: number | null
+  date: Date | null
+  isDuplicate: boolean
+}
+
+interface ScoreResult {
+  level: ConfidenceLevel
+  reasons: ConfidenceReason[]
+}
+
+const RED_REASONS: ConfidenceReason[] = [
+  "date_parse_failed",
+  "amount_parse_failed",
+  "date_wrong_year",
+  "amount_outlier",
+  "duplicate",
+  "dual_amount_values",
+]
+
+export function computeBatchStats(
+  rows: Array<{ amount: number; date: Date | null }>
+): BatchStats {
   const absAmounts = rows
     .map(r => r.amount)
-    .filter(a => typeof a === "number" && !isNaN(a) && a !== 0)
+    .filter((a): a is number => typeof a === "number" && !isNaN(a) && a !== 0)
     .map(a => Math.abs(a))
-  const dates = rows.map(r => r.date).filter(d => d instanceof Date && !isNaN(d.getTime()))
+  const dates = rows
+    .map(r => r.date)
+    .filter((d): d is Date => d instanceof Date && !isNaN(d.getTime()))
 
   const mean = absAmounts.length
     ? absAmounts.reduce((s, a) => s + a, 0) / absAmounts.length
@@ -13,7 +44,7 @@ export function computeBatchStats(rows) {
     ? Math.sqrt(absAmounts.reduce((s, a) => s + Math.pow(a - mean, 2), 0) / absAmounts.length)
     : 0
 
-  const yearCounts = {}
+  const yearCounts: Record<number, number> = {}
   for (const d of dates) {
     const y = d.getFullYear()
     yearCounts[y] = (yearCounts[y] ?? 0) + 1
@@ -25,8 +56,12 @@ export function computeBatchStats(rows) {
   return { mean, stdDev, dominantYear }
 }
 
-export function scoreRow(row, batchStats, fuseScore) {
-  const reasons = []
+export function scoreRow(
+  row: RowInput,
+  batchStats: BatchStats,
+  fuseScore: number | null
+): ScoreResult {
+  const reasons: ConfidenceReason[] = []
 
   if (!row.date || !(row.date instanceof Date) || isNaN(row.date.getTime())) {
     reasons.push("date_parse_failed")
@@ -45,8 +80,7 @@ export function scoreRow(row, batchStats, fuseScore) {
   if (fuseScore !== null && fuseScore > 0.4) reasons.push("low_confidence_merchant")
   if (row.isDuplicate) reasons.push("duplicate")
 
-  const RED = ["date_parse_failed", "amount_parse_failed", "date_wrong_year", "amount_outlier", "duplicate", "dual_amount_values"]
-  if (reasons.some(r => RED.includes(r))) return { level: "red", reasons }
+  if (reasons.some(r => RED_REASONS.includes(r))) return { level: "red", reasons }
   if (reasons.length > 0) return { level: "amber", reasons }
   return { level: "green", reasons: [] }
 }
