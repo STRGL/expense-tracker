@@ -46,6 +46,7 @@ next-env.d.ts
 
 /app/generated/prisma
 
-# local project notes (not for public repo)
+# local project notes and infrastructure config (not for public repo)
 Errors.md
 Roadmap.md
+docs/
