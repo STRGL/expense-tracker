@@ -1,21 +1,32 @@
 "use client"
 
-import { useState } from "react"
+import React, { useState } from "react"
 import { Trash2, Tag, X, Check, Edit3 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
+import type { TagSummary } from "@/types/api"
 
-export default function BulkActionBar({ 
-  selectedCount, 
-  onClear, 
-  onDelete, 
-  onTagChange, 
-  onRenameMerchant, 
+interface BulkActionBarProps {
+  selectedCount: number
+  onClear: () => void
+  onDelete?: () => void
+  onTagChange?: (tagId: string | null) => void
+  onRenameMerchant?: (name: string) => void
+  tags?: TagSummary[]
+  className?: string
+}
+
+export default function BulkActionBar({
+  selectedCount,
+  onClear,
+  onDelete,
+  onTagChange,
+  onRenameMerchant,
   tags = [],
-  className 
-}) {
+  className
+}: BulkActionBarProps) {
   const [merchantName, setMerchantName] = useState("")
   const [isRenaming, setIsRenaming] = useState(false)
   const [selectedTagId, setSelectedTagId] = useState("")
@@ -45,7 +56,7 @@ export default function BulkActionBar({
                   placeholder="New merchant name" 
                   className="h-8 w-40 text-xs py-0" 
                   value={merchantName}
-                  onChange={(e) => setMerchantName(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMerchantName(e.target.value)}
                   autoFocus
                 />
                 <Button 
