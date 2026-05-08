@@ -1,11 +1,12 @@
 // app/api/transactions/route.js
 import { NextResponse } from "next/server"
+import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/api-helpers"
 
 export const dynamic = "force-dynamic"
 
-export async function GET(request) {
+export async function GET(request: Request) {
   const { session, error } = await requireAuth()
   if (error) return error
 
@@ -21,19 +22,19 @@ export async function GET(request) {
   const limit = searchParams.get("limit") ? Number(searchParams.get("limit")) : null
   const offset = searchParams.get("offset") ? Number(searchParams.get("offset")) : 0
 
-  const txWhere = {}
-  if (dateFrom) txWhere.date = { ...txWhere.date, gte: new Date(dateFrom) }
-  if (dateTo) txWhere.date = { ...txWhere.date, lte: new Date(dateTo) }
+  const txWhere: Prisma.TransactionWhereInput = {}
+  if (dateFrom) txWhere.date = { ...(txWhere.date as Prisma.DateTimeFilter | undefined), gte: new Date(dateFrom) }
+  if (dateTo) txWhere.date = { ...(txWhere.date as Prisma.DateTimeFilter | undefined), lte: new Date(dateTo) }
   if (merchant) txWhere.merchantName = { contains: merchant }
-  if (minAmount) txWhere.totalAmount = { ...txWhere.totalAmount, gte: Number(minAmount) }
-  if (maxAmount) txWhere.totalAmount = { ...txWhere.totalAmount, lte: Number(maxAmount) }
+  if (minAmount) txWhere.totalAmount = { ...(txWhere.totalAmount as Prisma.FloatFilter | undefined), gte: Number(minAmount) }
+  if (maxAmount) txWhere.totalAmount = { ...(txWhere.totalAmount as Prisma.FloatFilter | undefined), lte: Number(maxAmount) }
 
   const splitWhere = {
     userId: session.user.id,
     status: "active",
     ...(tagId ? { tagId } : {}),
     transaction: txWhere,
-  }
+  } satisfies Prisma.TransactionSplitWhereInput
 
   const total = await prisma.transactionSplit.count({ where: splitWhere })
 
@@ -52,10 +53,10 @@ export async function GET(request) {
     },
     orderBy:
       sortBy === "amount"
-        ? { amount: sortOrder }
+        ? { amount: sortOrder as Prisma.SortOrder }
         : sortBy === "merchant"
-        ? { transaction: { merchantName: sortOrder } }
-        : { transaction: { date: sortOrder } },
+        ? { transaction: { merchantName: sortOrder as Prisma.SortOrder } }
+        : { transaction: { date: sortOrder as Prisma.SortOrder } },
     take: limit || undefined,
     skip: offset,
   })
@@ -81,7 +82,7 @@ export async function GET(request) {
   return NextResponse.json({ transactions, total })
 }
 
-export async function POST(request) {
+export async function POST(request: Request) {
   const { session, error } = await requireAuth()
   if (error) return error
 
@@ -98,8 +99,8 @@ export async function POST(request) {
     return NextResponse.json({ error: "At least one split is required" }, { status: 400 })
   }
 
-  const isProportional = splits.every(s => s.splitMethod === "proportional")
-  const splitSum = splits.reduce((sum, s) => sum + s.amount, 0)
+  const isProportional = splits.every((s: { splitMethod: string }) => s.splitMethod === "proportional")
+  const splitSum = splits.reduce((sum: number, s: { amount: number }) => sum + s.amount, 0)
   const isPending = isProportional && splitSum === 0 && splits.length > 1
 
   if (!isPending && Math.abs(splitSum - totalAmount) > 0.011) {

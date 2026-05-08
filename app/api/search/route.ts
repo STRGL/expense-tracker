@@ -5,7 +5,7 @@ import { requireAuth } from "@/lib/api-helpers"
 
 export const dynamic = "force-dynamic"
 
-export async function GET(request) {
+export async function GET(request: Request) {
   const { session, error } = await requireAuth()
   if (error) return error
 
@@ -72,11 +72,12 @@ export async function GET(request) {
       `
     )
   } catch (err) {
-    console.error("Search FTS error:", err.message)
+    const message = err instanceof Error ? err.message : "Unknown error"
+    console.error("Search FTS error:", message)
     return NextResponse.json({ error: "Search failed" }, { status: 500 })
   }
 
-  const results = rows.map(row => ({
+  const results = (rows as Array<Record<string, unknown>>).map((row) => ({
     id: row.id,
     date: row.date,
     merchantName: row.merchantName,

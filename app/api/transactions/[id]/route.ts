@@ -1,11 +1,12 @@
 // app/api/transactions/[id]/route.js
 import { NextResponse } from "next/server"
+import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/api-helpers"
 
 export const dynamic = "force-dynamic"
 
-async function getAccessibleTransaction(id, userId) {
+async function getAccessibleTransaction(id: string, userId: string) {
   const transaction = await prisma.transaction.findUnique({
     where: { id },
     include: {
@@ -15,19 +16,22 @@ async function getAccessibleTransaction(id, userId) {
     },
   })
   if (!transaction) {
-    return { transaction: null, error: NextResponse.json({ error: "Not found" }, { status: 404 }) }
+    return { transaction: null, userSplit: null, isOwner: false, error: NextResponse.json({ error: "Not found" }, { status: 404 }) } as const
   }
   const userSplit = transaction.splits.find(
     (s) => s.userId === userId && s.status === "active"
   )
   const isOwner = transaction.createdById === userId
   if (!userSplit && !isOwner) {
-    return { transaction: null, error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) }
+    return { transaction: null, userSplit: null, isOwner: false, error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) } as const
   }
-  return { transaction, userSplit, isOwner, error: null }
+  return { transaction, userSplit: userSplit ?? null, isOwner, error: null as null }
 }
 
-export async function GET(request, { params }) {
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   const { session, error: authError } = await requireAuth()
   if (authError) return authError
 
@@ -52,7 +56,10 @@ export async function GET(request, { params }) {
   })
 }
 
-export async function PUT(request, { params }) {
+export async function PUT(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   const { session, error: authError } = await requireAuth()
   if (authError) return authError
 
@@ -62,7 +69,7 @@ export async function PUT(request, { params }) {
   if (!isOwner) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
 
   const { date, merchantRaw, merchantName, totalAmount, notes, splits } = await request.json()
-  const data = {}
+  const data: Prisma.TransactionUpdateInput = {}
   if (date) data.date = new Date(date)
   if (merchantRaw?.trim()) data.merchantRaw = merchantRaw.trim()
   if (merchantName?.trim()) data.merchantName = merchantName.trim()
@@ -73,8 +80,8 @@ export async function PUT(request, { params }) {
     const t = await tx.transaction.update({ where: { id }, data })
 
     if (splits) {
-      const effectiveTotal = data.totalAmount ?? transaction.totalAmount
-      const splitSum = splits.reduce((s, sp) => s + sp.amount, 0)
+      const effectiveTotal = (data.totalAmount as number | undefined) ?? transaction.totalAmount
+      const splitSum = splits.reduce((s: number, sp: { amount: number }) => s + sp.amount, 0)
       if (Math.abs(splitSum - effectiveTotal) > 0.011) {
         throw new Error("Split amounts must sum to total amount")
       }
@@ -111,7 +118,10 @@ export async function PUT(request, { params }) {
   return NextResponse.json(updated)
 }
 
-export async function DELETE(request, { params }) {
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   const { session, error: authError } = await requireAuth()
   if (authError) return authError
 

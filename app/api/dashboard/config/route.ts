@@ -30,7 +30,7 @@ export async function GET() {
   return NextResponse.json(config)
 }
 
-export async function PUT(request) {
+export async function PUT(request: Request) {
   const { session, error } = await requireAuth()
   if (error) return error
 

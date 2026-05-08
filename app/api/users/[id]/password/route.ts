@@ -5,7 +5,10 @@ import { requireAdmin } from "@/lib/api-helpers"
 
 export const dynamic = "force-dynamic"
 
-export async function PUT(request, { params }) {
+export async function PUT(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   const { error } = await requireAdmin()
   if (error) return error
   const { id } = await params

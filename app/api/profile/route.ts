@@ -1,5 +1,6 @@
 // app/api/profile/route.js
 import { NextResponse } from "next/server"
+import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { hashPassword } from "@/lib/auth-utils"
 import { requireAuth } from "@/lib/api-helpers"
@@ -20,12 +21,12 @@ export async function GET() {
   return NextResponse.json(user)
 }
 
-export async function PUT(request) {
+export async function PUT(request: Request) {
   const { session, error } = await requireAuth()
   if (error) return error
 
   const { name, email, password, wage, themeAccent } = await request.json()
-  const data = {}
+  const data: Prisma.UserUpdateInput = {}
 
   if (name?.trim()) data.name = name.trim()
   if (email?.trim()) data.email = email.trim().toLowerCase()

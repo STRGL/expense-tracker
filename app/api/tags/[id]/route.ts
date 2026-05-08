@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server"
+import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/api-helpers"
 
 export const dynamic = "force-dynamic"
 
-async function getOwnedTag(id, userId) {
+async function getOwnedTag(id: string, userId: string) {
   const tag = await prisma.tag.findUnique({ where: { id } })
   if (!tag) return { tag: null, error: NextResponse.json({ error: "Not found" }, { status: 404 }) }
   if (tag.createdById !== userId) {
@@ -13,7 +14,10 @@ async function getOwnedTag(id, userId) {
   return { tag, error: null }
 }
 
-export async function PUT(request, { params }) {
+export async function PUT(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   const { session, error: authError } = await requireAuth()
   if (authError) return authError
 
@@ -22,7 +26,7 @@ export async function PUT(request, { params }) {
   if (error) return error
 
   const { name, colour, isShared } = await request.json()
-  const data = {}
+  const data: Prisma.TagUpdateInput = {}
   if (name?.trim()) data.name = name.trim()
   if (colour) data.colour = colour
   if (isShared !== undefined) data.isShared = isShared
@@ -31,7 +35,10 @@ export async function PUT(request, { params }) {
   return NextResponse.json(updated)
 }
 
-export async function DELETE(request, { params }) {
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   const { session, error: authError } = await requireAuth()
   if (authError) return authError
 

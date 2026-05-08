@@ -5,7 +5,10 @@ import { requireAuth } from "@/lib/api-helpers"
 
 export const dynamic = "force-dynamic"
 
-export async function GET(request, { params }) {
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   const { session, error: authError } = await requireAuth()
   if (authError) return authError
 

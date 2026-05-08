@@ -4,7 +4,10 @@ import { requireAuth } from "@/lib/api-helpers"
 
 export const dynamic = "force-dynamic"
 
-export async function POST(request, { params }) {
+export async function POST(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   const { session, error: authError } = await requireAuth()
   if (authError) return authError
 
@@ -26,6 +29,11 @@ export async function POST(request, { params }) {
       where: { id },
       include: { splits: { where: { status: "active" } } },
     })
+
+    if (!transaction) {
+      notFound = true
+      return
+    }
 
     await tx.transactionSplit.update({
       where: { id: mySplit.id },

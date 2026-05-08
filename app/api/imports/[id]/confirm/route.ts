@@ -5,7 +5,10 @@ import { requireAuth } from "@/lib/api-helpers"
 
 export const dynamic = "force-dynamic"
 
-export async function POST(request, { params }) {
+export async function POST(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   const { session, error: authError } = await requireAuth()
   if (authError) return authError
 
@@ -38,8 +41,8 @@ export async function POST(request, { params }) {
       const transaction = await tx.transaction.create({
         data: {
           date: row.date,
-          merchantRaw: row.merchantRaw,
-          merchantName: row.merchantResolved || row.merchantRaw,
+          merchantRaw: row.merchantRaw ?? "",
+          merchantName: row.merchantResolved || row.merchantRaw || "",
           totalAmount: row.amount,
           notes: null,
           createdById: session.user.id,

@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server"
+import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/api-helpers"
 
 export const dynamic = "force-dynamic"
 
-export async function PUT(request, { params }) {
+export async function PUT(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   const { session, error: authError } = await requireAuth()
   if (authError) return authError
 
@@ -20,7 +24,7 @@ export async function PUT(request, { params }) {
   })
   if (!batch) return NextResponse.json({ error: "Batch not found" }, { status: 404 })
 
-  const data = {}
+  const data: Prisma.ImportRowUncheckedUpdateManyInput = {}
   if (updateData.merchantResolved !== undefined) data.merchantResolved = updateData.merchantResolved
   if (updateData.tagId !== undefined) data.tagId = updateData.tagId || null
   if (updateData.status !== undefined) data.status = updateData.status
@@ -36,7 +40,10 @@ export async function PUT(request, { params }) {
   return NextResponse.json({ success: true, count: updated.count })
 }
 
-export async function DELETE(request, { params }) {
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   const { session, error: authError } = await requireAuth()
   if (authError) return authError
 

@@ -1,11 +1,15 @@
 // app/api/imports/[id]/rows/[rowId]/route.js
 import { NextResponse } from "next/server"
+import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/api-helpers"
 
 export const dynamic = "force-dynamic"
 
-export async function PUT(request, { params }) {
+export async function PUT(
+  request: Request,
+  { params }: { params: Promise<{ id: string; rowId: string }> }
+) {
   const { session, error: authError } = await requireAuth()
   if (authError) return authError
 
@@ -18,7 +22,7 @@ export async function PUT(request, { params }) {
   if (!row) return NextResponse.json({ error: "Row not found" }, { status: 404 })
 
   const { merchantResolved, date, amount, tagId, splitData, status } = await request.json()
-  const data = {}
+  const data: Prisma.ImportRowUncheckedUpdateInput = {}
   if (merchantResolved !== undefined) data.merchantResolved = merchantResolved
   if (date !== undefined) data.date = date ? new Date(date) : null
   if (amount !== undefined) data.amount = amount != null ? Number(amount) : null

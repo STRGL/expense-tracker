@@ -14,7 +14,7 @@ export async function GET() {
   return NextResponse.json(aliases)
 }
 
-export async function POST(request) {
+export async function POST(request: Request) {
   const { session, error } = await requireAuth()
   if (error) return error
   const { rawName, niceName, isShared } = await request.json()

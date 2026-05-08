@@ -5,7 +5,7 @@ import { requireAuth } from "@/lib/api-helpers"
 
 export const dynamic = "force-dynamic"
 
-export async function GET(request) {
+export async function GET(request: Request) {
   const { session, error } = await requireAuth()
   if (error) return error
 
@@ -56,17 +56,20 @@ export async function GET(request) {
       }
     : null
 
-  const tagCounts = {}
+  type TagInfo = { id: string; name: string; colour: string; parentId: string | null } | null
+  type SplitWithTag = (typeof splits)[number]
+
+  const tagCounts: Record<string, { count: number; tag: TagInfo }> = {}
   for (const sp of splits) {
     if (!sp.tagId) continue
     tagCounts[sp.tagId] = { count: (tagCounts[sp.tagId]?.count ?? 0) + 1, tag: sp.tag }
   }
   const mostUsedEntry = Object.values(tagCounts).sort((a, b) => b.count - a.count)[0] ?? null
-  const mostUsedTag = mostUsedEntry
+  const mostUsedTag = mostUsedEntry && mostUsedEntry.tag
     ? { name: mostUsedEntry.tag.name, colour: mostUsedEntry.tag.colour, count: mostUsedEntry.count }
     : null
 
-  const tagAmounts = {}
+  const tagAmounts: Record<string, { tagId: string | null; tagName: string; colour: string; parentId: string | null; amount: number }> = {}
   for (const sp of outflowSplits) {
     const key = sp.tagId ?? "untagged"
     if (!tagAmounts[key]) {
@@ -82,7 +85,7 @@ export async function GET(request) {
   }
   const spendByTag = Object.values(tagAmounts)
 
-  const monthTotals = {}
+  const monthTotals: Record<string, number> = {}
   for (const sp of outflowSplits) {
     const d = new Date(sp.transaction.date)
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`
@@ -92,8 +95,8 @@ export async function GET(request) {
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([period, amount]) => ({ period, amount }))
 
-  function groupByTopLevelTag(splitsArr) {
-    const byTag = {}
+  function groupByTopLevelTag(splitsArr: SplitWithTag[]) {
+    const byTag: Record<string, { tagId: string; amount: number; tag: TagInfo }> = {}
     for (const sp of splitsArr) {
       if (!sp.tagId) continue
       const topId = sp.tag?.parentId ?? sp.tagId
@@ -108,7 +111,7 @@ export async function GET(request) {
   const prevByTag = groupByTopLevelTag(prevSplits.filter(sp => sp.amount < 0))
   const allTagIds = new Set([...Object.keys(currentByTag), ...Object.keys(prevByTag)])
 
-  const trends = []
+  const trends: Array<{ tagId: string; tagName: string; colour: string; previousAmount: number; currentAmount: number; change: number | null }> = []
   for (const tagId of allTagIds) {
     const current = currentByTag[tagId]?.amount ?? 0
     const previous = prevByTag[tagId]?.amount ?? 0
@@ -124,13 +127,13 @@ export async function GET(request) {
     })
   }
 
-  const increases = trends.filter(t => t.change !== null && t.change > 0).sort((a, b) => b.change - a.change).slice(0, 3)
+  const increases = trends.filter(t => t.change !== null && t.change > 0).sort((a, b) => (b.change ?? 0) - (a.change ?? 0)).slice(0, 3)
   // Hide decreases if current month has NO spending (suggests data hasn't been uploaded yet)
-  const decreases = totalOutflow > 0 
-    ? trends.filter(t => t.change !== null && t.change < 0).sort((a, b) => a.change - b.change).slice(0, 3)
+  const decreases = totalOutflow > 0
+    ? trends.filter(t => t.change !== null && t.change < 0).sort((a, b) => (a.change ?? 0) - (b.change ?? 0)).slice(0, 3)
     : []
 
-  const merchantTotals = {}
+  const merchantTotals: Record<string, number> = {}
   for (const sp of outflowSplits) {
     const m = sp.transaction.merchantName
     merchantTotals[m] = (merchantTotals[m] ?? 0) + Math.abs(sp.amount)

@@ -26,7 +26,7 @@ export async function GET() {
   return NextResponse.json(batches)
 }
 
-export async function POST(request) {
+export async function POST(request: Request) {
   const { session, error } = await requireAuth()
   if (error) return error
 
@@ -39,7 +39,7 @@ export async function POST(request) {
     )
   }
 
-  const { data: rows, meta } = Papa.parse(csvText, { header: true, skipEmptyLines: true })
+  const { data: rows, meta } = Papa.parse<Record<string, string>>(csvText, { header: true, skipEmptyLines: true })
   const headers = meta.fields ?? []
 
   if (![dateColumn, merchantColumn, amountColumn].every(c => headers.includes(c))) {

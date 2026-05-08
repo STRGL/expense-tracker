@@ -27,7 +27,7 @@ const DEFAULT_TAGS = [
   { name: "Misc", colour: "#6b7280", children: [] },
 ]
 
-export async function POST(request) {
+export async function POST(request: Request) {
   const userCount = await prisma.user.count()
   if (userCount > 0) {
     return NextResponse.json({ error: "Setup already completed" }, { status: 403 })

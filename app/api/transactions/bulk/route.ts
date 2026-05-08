@@ -4,7 +4,7 @@ import { requireAuth } from "@/lib/api-helpers"
 
 export const dynamic = "force-dynamic"
 
-export async function DELETE(request) {
+export async function DELETE(request: Request) {
   const { session, error: authError } = await requireAuth()
   if (authError) return authError
 
@@ -53,6 +53,7 @@ export async function DELETE(request) {
 
     return NextResponse.json({ success: true, count: deletedCount })
   } catch (err) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+    const message = err instanceof Error ? err.message : "Unknown error"
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }

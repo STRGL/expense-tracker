@@ -14,7 +14,7 @@ export async function GET() {
   return NextResponse.json(users)
 }
 
-export async function POST(request) {
+export async function POST(request: Request) {
   const { error } = await requireAdmin()
   if (error) return error
   const { name, email, password } = await request.json()

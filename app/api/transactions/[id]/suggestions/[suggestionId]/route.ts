@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/api-helpers"
 
@@ -6,7 +7,10 @@ export const dynamic = "force-dynamic"
 
 const VALID_ACTIONS = ["accept", "decline", "manually_resolved"]
 
-export async function PUT(request, { params }) {
+export async function PUT(
+  request: Request,
+  { params }: { params: Promise<{ id: string; suggestionId: string }> }
+) {
   const { session, error: authError } = await requireAuth()
   if (authError) return authError
 
@@ -27,7 +31,7 @@ export async function PUT(request, { params }) {
   }
 
   await prisma.$transaction(async (tx) => {
-    const statusMap = { accept: "accepted", decline: "rejected", manually_resolved: "manually_resolved" }
+    const statusMap: Record<string, string> = { accept: "accepted", decline: "rejected", manually_resolved: "manually_resolved" }
     await tx.splitSuggestion.update({
       where: { id: suggestionId },
       data: { status: statusMap[action], resolvedAt: new Date() },
@@ -35,7 +39,7 @@ export async function PUT(request, { params }) {
 
     if (action === "accept") {
       const changes = JSON.parse(suggestion.suggestedChanges)
-      const txData = {}
+      const txData: Prisma.TransactionUpdateInput = {}
       if (changes.date) txData.date = new Date(changes.date.suggested)
       if (changes.merchantName) txData.merchantName = changes.merchantName.suggested
       if (changes.totalAmount) txData.totalAmount = Number(changes.totalAmount.suggested)
@@ -58,9 +62,9 @@ export async function PUT(request, { params }) {
             where: { id },
             include: { splits: { where: { status: "active" } } },
           })
-          const ownerSplit = transaction.splits.find((s) => s.userId === session.user.id)
-          if (ownerSplit) {
-            const newTotal = txData.totalAmount ?? transaction.totalAmount
+          const ownerSplit = transaction?.splits.find((s) => s.userId === session.user.id)
+          if (ownerSplit && transaction) {
+            const newTotal = (txData.totalAmount as number | undefined) ?? transaction.totalAmount
             const ownerNewAmount = Math.max(0, Math.round((newTotal - Number(changes.mySplitAmount.suggested)) * 100) / 100)
             await tx.transactionSplit.update({
               where: { id: ownerSplit.id },
