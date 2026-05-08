@@ -6,6 +6,7 @@ export interface TagSummary {
 
 export interface TransactionListItem {
   id: string
+  /** ISO date string (serialized from Prisma Date by NextResponse.json) */
   date: string
   merchantName: string
   merchantRaw: string
