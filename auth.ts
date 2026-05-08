@@ -6,7 +6,7 @@ import { validatePassword } from "@/lib/auth-utils"
 export const { handlers, auth, signIn, signOut } = NextAuth({
   session: {
     strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    maxAge: 30 * 24 * 60 * 60,
   },
   providers: [
     Credentials({
@@ -33,8 +33,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     jwt({ token, user }) {
       if (user) {
-        token.id = user.id
-        token.role = user.role
+        token.id = user.id as string
+        token.role = (user as { role: string }).role
       }
       return token
     },
