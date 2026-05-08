@@ -24,6 +24,7 @@ export async function PUT(
   const { rule, error } = await getOwnedRule(id, session.user.id)
   if (error) return error
   const { merchantPattern, tagId, isShared } = await request.json()
+  // UncheckedUpdateInput required: tagId is assigned as a raw FK string
   const data: Prisma.ImportRuleUncheckedUpdateInput = {}
   if (merchantPattern?.trim()) data.merchantPattern = merchantPattern.trim()
   if (tagId) data.tagId = tagId

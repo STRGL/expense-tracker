@@ -25,7 +25,7 @@ async function getAccessibleTransaction(id: string, userId: string) {
   if (!userSplit && !isOwner) {
     return { transaction: null, userSplit: null, isOwner: false, error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) } as const
   }
-  return { transaction, userSplit: userSplit ?? null, isOwner, error: null as null }
+  return { transaction, userSplit: userSplit ?? null, isOwner, error: null } as const
 }
 
 export async function GET(

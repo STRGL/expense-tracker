@@ -18,16 +18,21 @@ export async function GET(request: Request) {
   const minAmount = searchParams.get("minAmount")
   const maxAmount = searchParams.get("maxAmount")
   const sortBy = searchParams.get("sortBy") ?? "date"
-  const sortOrder = searchParams.get("sortOrder") ?? "desc"
+  const rawSortOrder = searchParams.get("sortOrder") ?? "desc"
+  const sortOrder: Prisma.SortOrder = rawSortOrder === "asc" ? "asc" : "desc"
   const limit = searchParams.get("limit") ? Number(searchParams.get("limit")) : null
   const offset = searchParams.get("offset") ? Number(searchParams.get("offset")) : 0
 
   const txWhere: Prisma.TransactionWhereInput = {}
-  if (dateFrom) txWhere.date = { ...(txWhere.date as Prisma.DateTimeFilter | undefined), gte: new Date(dateFrom) }
-  if (dateTo) txWhere.date = { ...(txWhere.date as Prisma.DateTimeFilter | undefined), lte: new Date(dateTo) }
+  const dateFilter: Prisma.DateTimeFilter = {}
+  if (dateFrom) dateFilter.gte = new Date(dateFrom)
+  if (dateTo) dateFilter.lte = new Date(dateTo)
+  if (dateFrom || dateTo) txWhere.date = dateFilter
   if (merchant) txWhere.merchantName = { contains: merchant }
-  if (minAmount) txWhere.totalAmount = { ...(txWhere.totalAmount as Prisma.FloatFilter | undefined), gte: Number(minAmount) }
-  if (maxAmount) txWhere.totalAmount = { ...(txWhere.totalAmount as Prisma.FloatFilter | undefined), lte: Number(maxAmount) }
+  const amountFilter: Prisma.FloatFilter = {}
+  if (minAmount) amountFilter.gte = Number(minAmount)
+  if (maxAmount) amountFilter.lte = Number(maxAmount)
+  if (minAmount || maxAmount) txWhere.totalAmount = amountFilter
 
   const splitWhere = {
     userId: session.user.id,
@@ -53,10 +58,10 @@ export async function GET(request: Request) {
     },
     orderBy:
       sortBy === "amount"
-        ? { amount: sortOrder as Prisma.SortOrder }
+        ? { amount: sortOrder }
         : sortBy === "merchant"
-        ? { transaction: { merchantName: sortOrder as Prisma.SortOrder } }
-        : { transaction: { date: sortOrder as Prisma.SortOrder } },
+        ? { transaction: { merchantName: sortOrder } }
+        : { transaction: { date: sortOrder } },
     take: limit || undefined,
     skip: offset,
   })

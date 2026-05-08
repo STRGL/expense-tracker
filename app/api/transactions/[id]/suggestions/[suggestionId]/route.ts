@@ -39,10 +39,11 @@ export async function PUT(
 
     if (action === "accept") {
       const changes = JSON.parse(suggestion.suggestedChanges)
+      const newTotalAmount = changes.totalAmount ? Number(changes.totalAmount.suggested) : undefined
       const txData: Prisma.TransactionUpdateInput = {}
       if (changes.date) txData.date = new Date(changes.date.suggested)
       if (changes.merchantName) txData.merchantName = changes.merchantName.suggested
-      if (changes.totalAmount) txData.totalAmount = Number(changes.totalAmount.suggested)
+      if (newTotalAmount !== undefined) txData.totalAmount = newTotalAmount
       if (changes.notes !== undefined) txData.notes = changes.notes?.suggested ?? null
 
       if (Object.keys(txData).length > 0) {
@@ -64,7 +65,7 @@ export async function PUT(
           })
           const ownerSplit = transaction?.splits.find((s) => s.userId === session.user.id)
           if (ownerSplit && transaction) {
-            const newTotal = (txData.totalAmount as number | undefined) ?? transaction.totalAmount
+            const newTotal = newTotalAmount ?? transaction.totalAmount
             const ownerNewAmount = Math.max(0, Math.round((newTotal - Number(changes.mySplitAmount.suggested)) * 100) / 100)
             await tx.transactionSplit.update({
               where: { id: ownerSplit.id },
