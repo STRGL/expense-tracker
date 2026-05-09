@@ -199,6 +199,9 @@ export async function DELETE(
     if (allSplits.every(s => s.hiddenAt !== null)) {
       await tx.splitSuggestion.deleteMany({ where: { transactionId: id } })
       await tx.transaction.delete({ where: { id } })
+      if (transaction.parentId) {
+        await upsertSystemLine(tx as any, transaction.parentId)
+      }
     }
   })
 
