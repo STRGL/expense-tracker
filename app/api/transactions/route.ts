@@ -43,7 +43,17 @@ export async function GET(request: Request) {
     transaction: {
       ...txWhere,
       isSystemLine: false,
-      parentId: null,
+      OR: [
+        { parentId: null },
+        {
+          parentId: { not: null },
+          parent: {
+            splits: {
+              none: { userId: session.user.id, status: "active", hiddenAt: null },
+            },
+          },
+        },
+      ],
     },
   } satisfies Prisma.TransactionSplitWhereInput
 

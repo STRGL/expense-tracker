@@ -25,14 +25,22 @@ interface Props {
   totalAmount: number
   currentUserId: string
   onChange: (splits: Split[]) => void
+  initialSplits?: Split[]
 }
 
-export default function SplitPanel({ totalAmount, currentUserId, onChange }: Props) {
-  const [splitting, setSplitting] = useState(false)
-  const [method, setMethod] = useState<SplitMethod>("equal")
+export default function SplitPanel({ totalAmount, currentUserId, onChange, initialSplits }: Props) {
+  const hasInitialSplit = initialSplits && (initialSplits.length > 1 || initialSplits.some(s => s.userId !== currentUserId))
+  const [splitting, setSplitting] = useState(hasInitialSplit ?? false)
+  const [method, setMethod] = useState<SplitMethod>(
+    hasInitialSplit ? (initialSplits[0]?.splitMethod as SplitMethod ?? "equal") : "equal"
+  )
   const [users, setUsers] = useState<ActiveUser[]>([])
-  const [selectedIds, setSelectedIds] = useState<string[]>([])
-  const [amounts, setAmounts] = useState<Record<string, number>>({})
+  const [selectedIds, setSelectedIds] = useState<string[]>(
+    hasInitialSplit ? initialSplits.filter(s => s.userId !== currentUserId).map(s => s.userId) : []
+  )
+  const [amounts, setAmounts] = useState<Record<string, number>>(
+    hasInitialSplit ? Object.fromEntries(initialSplits.map(s => [s.userId, Math.abs(s.amount)])) : {}
+  )
   const [isPending, setIsPending] = useState(false)
 
   useEffect(() => {

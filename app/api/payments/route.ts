@@ -22,7 +22,7 @@ export async function GET() {
         ],
       },
       include: {
-        transaction: { select: { createdById: true } },
+        transaction: { select: { createdById: true, createdBy: { select: { name: true, isActive: true } } } },
         user: { select: { id: true, name: true, isActive: true } },
       },
     }),
@@ -45,7 +45,13 @@ export async function GET() {
   for (const split of splits) {
     const isTheirSplitOnMine = split.userId !== userId
     const otherId = isTheirSplitOnMine ? split.userId : split.transaction.createdById
-    if (!users[otherId]) users[otherId] = { name: split.user.name, isActive: split.user.isActive }
+    const otherName = isTheirSplitOnMine
+      ? split.user.name
+      : (split.transaction.createdBy?.name ?? split.transaction.createdById)
+    const otherActive = isTheirSplitOnMine
+      ? split.user.isActive
+      : (split.transaction.createdBy?.isActive ?? true)
+    if (!users[otherId]) users[otherId] = { name: otherName, isActive: otherActive }
     const abs = Math.abs(split.amount)
     if (isTheirSplitOnMine) {
       owedByThem[otherId] = (owedByThem[otherId] ?? 0) + abs

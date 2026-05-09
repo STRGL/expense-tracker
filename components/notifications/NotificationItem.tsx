@@ -92,6 +92,40 @@ export default function NotificationItem({ notification, onAction }: Props) {
         )}
       </div>
 
+      {/* Split created — accept or decline */}
+      {notification.type === "split_created" && notification.transactionId && (
+        <div className="flex gap-2 pt-1 flex-wrap">
+          <Button
+            size="sm"
+            className="h-7 text-xs"
+            disabled={responding}
+            onClick={async () => {
+              setResponding(true)
+              await fetch(`/api/notifications/${notification.id}`, { method: "PUT" })
+              setResponding(false)
+              onAction?.()
+            }}
+          >
+            Accept
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs text-destructive hover:text-destructive"
+            disabled={responding}
+            onClick={async () => {
+              setResponding(true)
+              await fetch(`/api/transactions/${notification.transactionId}/decline`, { method: "POST" })
+              await fetch(`/api/notifications/${notification.id}`, { method: "PUT" })
+              setResponding(false)
+              onAction?.()
+            }}
+          >
+            Decline
+          </Button>
+        </div>
+      )}
+
       {/* Missing wage action */}
       {notification.type === "missing_wage_for_split" && (
         <div className="pt-1">

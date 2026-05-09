@@ -278,6 +278,7 @@ export default function TransactionForm({ initial, currentUserId, onSaved, onCan
         totalAmount={Number(form.totalAmount) || 0}
         currentUserId={currentUserId}
         onChange={setSplits}
+        initialSplits={initial?.splits as Split[] | undefined}
       />
 
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
