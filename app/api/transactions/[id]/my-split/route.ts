@@ -16,7 +16,7 @@ export async function PUT(
   const { tagId } = await request.json()
 
   const split = await prisma.transactionSplit.findFirst({
-    where: { transactionId: id, userId: session.user.id, status: "active" },
+    where: { transactionId: id, userId: session.user.id, status: "active", hiddenAt: null },
   })
 
   if (!split) {

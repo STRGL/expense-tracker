@@ -149,9 +149,16 @@ export default function TransactionList({ onReload: _onReload }: Props = {}) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ids: Array.from(selectedIds) }),
     })
-    if (res.ok) {
-      load()
-    }
+    if (res.ok) load()
+  }
+
+  async function handleBulkTagChange(tagId: string | null) {
+    const res = await fetch("/api/transactions/bulk-tag", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: Array.from(selectedIds), tagId }),
+    })
+    if (res.ok) load()
   }
 
   async function toggleChildren(txId: string) {
@@ -472,6 +479,7 @@ export default function TransactionList({ onReload: _onReload }: Props = {}) {
         selectedCount={selectedIds.size}
         onClear={() => setSelectedIds(new Set())}
         onDelete={handleBulkDelete}
+        onTagChange={handleBulkTagChange}
         tags={tags}
       />
 

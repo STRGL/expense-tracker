@@ -300,7 +300,11 @@ export default function TransactionDialog({ transaction, onClose, onSaved }: Pro
                     <span className={s.userId === userId ? "font-medium" : "text-muted-foreground"}>
                       {s.userId === userId ? "You" : (s.userName ?? s.userId)}
                     </span>
-                    <span className="tabular-nums">{formatAmount(s.amount)}</span>
+                    {s.userId !== userId && s.splitMethod === "proportional" ? (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    ) : (
+                      <span className="tabular-nums">{formatAmount(s.amount)}</span>
+                    )}
                   </div>
                 ))}
               </div>
