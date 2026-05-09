@@ -1,8 +1,8 @@
-import { calculateSplits, validateSpecifiedSplits } from "@/lib/split-calculator"
+import { calculateSplits, validateSpecifiedSplits, SplitResult, ProportionalResult } from "@/lib/split-calculator"
 
 describe("calculateSplits — equal", () => {
   it("splits evenly between two users", () => {
-    const result = calculateSplits(100, "equal", [{ id: "u1" }, { id: "u2" }])
+    const result = calculateSplits(100, "equal", [{ id: "u1" }, { id: "u2" }]) as SplitResult[]
     expect(result).toHaveLength(2)
     expect(result[0].amount + result[1].amount).toBeCloseTo(100, 2)
     expect(result[0].amount).toBeCloseTo(50, 2)
@@ -10,12 +10,12 @@ describe("calculateSplits — equal", () => {
   })
 
   it("assigns full amount to sole user", () => {
-    const result = calculateSplits(75.50, "equal", [{ id: "u1" }])
+    const result = calculateSplits(75.50, "equal", [{ id: "u1" }]) as SplitResult[]
     expect(result[0].amount).toBeCloseTo(75.50, 2)
   })
 
   it("handles uneven division by adjusting the first user", () => {
-    const result = calculateSplits(10, "equal", [{ id: "u1" }, { id: "u2" }, { id: "u3" }])
+    const result = calculateSplits(10, "equal", [{ id: "u1" }, { id: "u2" }, { id: "u3" }]) as SplitResult[]
     const total = result.reduce((s, r) => s + r.amount, 0)
     expect(total).toBeCloseTo(10, 2)
     expect(result.map(r => r.userId)).toEqual(["u1", "u2", "u3"])
@@ -25,10 +25,10 @@ describe("calculateSplits — equal", () => {
 describe("calculateSplits — proportional", () => {
   it("splits by wage ratio", () => {
     const users = [{ id: "u1", wage: 30000 }, { id: "u2", wage: 70000 }]
-    const { splits, pendingData } = calculateSplits(100, "proportional", users)
+    const { splits, pendingData } = calculateSplits(100, "proportional", users) as ProportionalResult
     expect(pendingData).toBe(false)
-    expect(splits.find(r => r.userId === "u1").amount).toBeCloseTo(30, 1)
-    expect(splits.find(r => r.userId === "u2").amount).toBeCloseTo(70, 1)
+    expect(splits.find(r => r.userId === "u1")!.amount).toBeCloseTo(30, 1)
+    expect(splits.find(r => r.userId === "u2")!.amount).toBeCloseTo(70, 1)
     const total = splits.reduce((s, r) => s + r.amount, 0)
     expect(total).toBeCloseTo(100, 2)
   })
@@ -40,7 +40,7 @@ describe("calculateSplits — proportional", () => {
   })
 
   it("handles a single user with any wage", () => {
-    const { splits } = calculateSplits(50, "proportional", [{ id: "u1", wage: 45000 }])
+    const { splits } = calculateSplits(50, "proportional", [{ id: "u1", wage: 45000 }]) as ProportionalResult
     expect(splits[0].amount).toBeCloseTo(50, 2)
   })
 
@@ -55,8 +55,8 @@ describe("calculateSplits — proportional", () => {
       { id: "u2", wage: 5000 * 12 },
     ]
 
-    const monthlyResult = calculateSplits(amount, "proportional", monthlyUsers)
-    const annualResult = calculateSplits(amount, "proportional", annualUsers)
+    const monthlyResult = calculateSplits(amount, "proportional", monthlyUsers) as ProportionalResult
+    const annualResult = calculateSplits(amount, "proportional", annualUsers) as ProportionalResult
 
     expect(monthlyResult).toEqual(annualResult)
     expect(monthlyResult.splits[0].amount).toBeCloseTo(333.34, 2)
@@ -71,15 +71,15 @@ describe("calculateSplits — proportional", () => {
       { id: "u3", wage: 30000 },
       { id: "u4", wage: 30000 },
     ]
-    
-    const { splits } = calculateSplits(amount, "proportional", users)
-    
+
+    const { splits } = calculateSplits(amount, "proportional", users) as ProportionalResult
+
     expect(splits).toHaveLength(4)
-    expect(splits.find(r => r.userId === "u1").amount).toBe(20)
-    expect(splits.find(r => r.userId === "u2").amount).toBe(20)
-    expect(splits.find(r => r.userId === "u3").amount).toBe(30)
-    expect(splits.find(r => r.userId === "u4").amount).toBe(30)
-    
+    expect(splits.find(r => r.userId === "u1")!.amount).toBe(20)
+    expect(splits.find(r => r.userId === "u2")!.amount).toBe(20)
+    expect(splits.find(r => r.userId === "u3")!.amount).toBe(30)
+    expect(splits.find(r => r.userId === "u4")!.amount).toBe(30)
+
     const total = splits.reduce((s, r) => s + r.amount, 0)
     expect(total).toBe(100)
   })
@@ -89,7 +89,7 @@ describe("calculateSplits — proportional", () => {
       { id: "u1", wage: 50000 },
       { id: "u2", wage: null },
     ]
-    const { splits, pendingData } = calculateSplits(100, "proportional", users)
+    const { splits, pendingData } = calculateSplits(100, "proportional", users) as ProportionalResult
     expect(pendingData).toBe(true)
     expect(splits.every(s => s.amount === 0)).toBe(true)
   })

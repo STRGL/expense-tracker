@@ -16,7 +16,7 @@ const { auth } = require("@/auth")
 const { prisma } = require("@/lib/prisma")
 const session = { user: { id: "u1", role: "user" } }
 
-const makeSplit = (amount, tagName, tagColour, merchantName, date) => ({
+const makeSplit = (amount: number, tagName: string | null, tagColour: string | null, merchantName: string, date: string) => ({
   amount,
   tagId: tagName ? `tag-${tagName}` : null,
   tag: tagName ? { id: `tag-${tagName}`, name: tagName, colour: tagColour, parentId: null } : null,

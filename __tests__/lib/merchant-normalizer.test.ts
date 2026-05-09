@@ -2,8 +2,8 @@ import { normalizeMerchant } from "@/lib/merchant-normalizer"
 
 describe("normalizeMerchant", () => {
   it("returns empty string for null/undefined input", () => {
-    expect(normalizeMerchant(null)).toBe("")
-    expect(normalizeMerchant(undefined)).toBe("")
+    expect(normalizeMerchant(null as unknown as string)).toBe("")
+    expect(normalizeMerchant(undefined as unknown as string)).toBe("")
     expect(normalizeMerchant("")).toBe("")
   })
 

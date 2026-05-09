@@ -61,7 +61,7 @@ describe("POST /api/transactions/[id]/suggestions", () => {
     auth.mockResolvedValue(session)
     prisma.transaction.findUnique.mockResolvedValue({ id: "tx1", createdById: "owner1" })
     const mockSuggestion = { id: "s1", status: "pending" }
-    prisma.$transaction.mockImplementation(async (cb) =>
+    prisma.$transaction.mockImplementation(async (cb: (tx: any) => Promise<any>) =>
       cb({
         splitSuggestion: { create: jest.fn().mockResolvedValue(mockSuggestion) },
         notification: { create: jest.fn() },
@@ -119,7 +119,7 @@ describe("PUT /api/transactions/[id]/suggestions/[suggestionId]", () => {
     })
     const mockCreate = jest.fn()
     const mockUpdate = jest.fn()
-    prisma.$transaction.mockImplementation(async (cb) =>
+    prisma.$transaction.mockImplementation(async (cb: (tx: any) => Promise<any>) =>
       cb({
         splitSuggestion: { update: mockUpdate },
         transaction: { update: jest.fn(), findUnique: jest.fn().mockResolvedValue({ id: "tx1", totalAmount: 100, splits: [] }) },

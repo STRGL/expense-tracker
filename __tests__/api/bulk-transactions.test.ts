@@ -38,7 +38,7 @@ describe("DELETE /api/transactions/bulk", () => {
       { id: "tx1", createdById: "u1", splits: [{ userId: "u1" }, { userId: "u2" }] },
     ]
     
-    prisma.$transaction.mockImplementation(async (cb) => cb({
+    prisma.$transaction.mockImplementation(async (cb: (tx: any) => Promise<any>) => cb({
       transaction: { 
         findMany: jest.fn().mockResolvedValue(mockTx),
         deleteMany: jest.fn().mockResolvedValue({ count: 1 })
@@ -59,7 +59,7 @@ describe("DELETE /api/transactions/bulk", () => {
 
   it("ignores transactions not owned by the user", async () => {
     auth.mockResolvedValue(session)
-    prisma.$transaction.mockImplementation(async (cb) => cb({
+    prisma.$transaction.mockImplementation(async (cb: (tx: any) => Promise<any>) => cb({
       transaction: { 
         findMany: jest.fn().mockResolvedValue([]), // Nothing found for this user
       },

@@ -28,7 +28,7 @@ describe("POST /api/transactions/[id]/decline", () => {
 
   it("returns 404 when user has no active split", async () => {
     auth.mockResolvedValue(session)
-    prisma.$transaction.mockImplementation(async (cb) =>
+    prisma.$transaction.mockImplementation(async (cb: (tx: any) => Promise<any>) =>
       cb({
         transactionSplit: { findFirst: jest.fn().mockResolvedValue(null), update: jest.fn() },
         transaction: { findUnique: jest.fn() },
@@ -44,7 +44,7 @@ describe("POST /api/transactions/[id]/decline", () => {
     auth.mockResolvedValue(session)
     const mockCreate = jest.fn()
     const mockUpdate = jest.fn()
-    prisma.$transaction.mockImplementation(async (cb) =>
+    prisma.$transaction.mockImplementation(async (cb: (tx: any) => Promise<any>) =>
       cb({
         transactionSplit: {
           findFirst: jest.fn().mockResolvedValue({ id: "sp1", userId: "u1" }),

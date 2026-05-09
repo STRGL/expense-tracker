@@ -9,19 +9,19 @@ describe("computeBatchStats", () => {
   })
 
   it("computes mean correctly from positive amounts", () => {
-    const rows = [{ amount: 10 }, { amount: 20 }, { amount: 30 }]
+    const rows = [{ amount: 10, date: null }, { amount: 20, date: null }, { amount: 30, date: null }]
     expect(computeBatchStats(rows).mean).toBe(20)
   })
 
   it("uses absolute values so credits do not skew the mean", () => {
     // Without abs: mean = (10 + 20 - 15) / 3 = 5
     // With abs:    mean = (10 + 20 + 15) / 3 = 15
-    const rows = [{ amount: 10 }, { amount: 20 }, { amount: -15 }]
+    const rows = [{ amount: 10, date: null }, { amount: 20, date: null }, { amount: -15, date: null }]
     expect(computeBatchStats(rows).mean).toBeCloseTo(15)
   })
 
   it("ignores zero amounts in stats calculation", () => {
-    const rows = [{ amount: 10 }, { amount: 20 }, { amount: 0 }]
+    const rows = [{ amount: 10, date: null }, { amount: 20, date: null }, { amount: 0, date: null }]
     expect(computeBatchStats(rows).mean).toBeCloseTo(15)
   })
 

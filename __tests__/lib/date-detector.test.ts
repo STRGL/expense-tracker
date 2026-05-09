@@ -3,7 +3,7 @@ import { detectDateFormat, parseDate } from "@/lib/date-detector"
 describe("detectDateFormat", () => {
   it("returns null for empty input", () => {
     expect(detectDateFormat([])).toBeNull()
-    expect(detectDateFormat([null, ""])).toBeNull()
+    expect(detectDateFormat([null as unknown as string, ""])).toBeNull()
   })
 
   it("detects YYYY-MM-DD format", () => {
@@ -29,33 +29,33 @@ describe("detectDateFormat", () => {
 
 describe("parseDate", () => {
   it("returns null for null/empty input", () => {
-    expect(parseDate(null, "DD/MM/YYYY")).toBeNull()
+    expect(parseDate(null as unknown as string, "DD/MM/YYYY")).toBeNull()
     expect(parseDate("", "DD/MM/YYYY")).toBeNull()
-    expect(parseDate("01/01/2026", null)).toBeNull()
+    expect(parseDate("01/01/2026", null as unknown as import("@/lib/date-detector").DateFormat)).toBeNull()
   })
 
   it("parses DD/MM/YYYY correctly", () => {
     const d = parseDate("15/03/2026", "DD/MM/YYYY")
     expect(d).toBeInstanceOf(Date)
-    expect(d.getDate()).toBe(15)
-    expect(d.getMonth()).toBe(2)
-    expect(d.getFullYear()).toBe(2026)
+    expect(d!.getDate()).toBe(15)
+    expect(d!.getMonth()).toBe(2)
+    expect(d!.getFullYear()).toBe(2026)
   })
 
   it("parses MM/DD/YYYY correctly", () => {
     const d = parseDate("03/15/2026", "MM/DD/YYYY")
     expect(d).toBeInstanceOf(Date)
-    expect(d.getDate()).toBe(15)
-    expect(d.getMonth()).toBe(2)
-    expect(d.getFullYear()).toBe(2026)
+    expect(d!.getDate()).toBe(15)
+    expect(d!.getMonth()).toBe(2)
+    expect(d!.getFullYear()).toBe(2026)
   })
 
   it("parses YYYY-MM-DD correctly", () => {
     const d = parseDate("2026-03-15", "YYYY-MM-DD")
     expect(d).toBeInstanceOf(Date)
-    expect(d.getDate()).toBe(15)
-    expect(d.getMonth()).toBe(2)
-    expect(d.getFullYear()).toBe(2026)
+    expect(d!.getDate()).toBe(15)
+    expect(d!.getMonth()).toBe(2)
+    expect(d!.getFullYear()).toBe(2026)
   })
 
   it("returns null for invalid date string", () => {

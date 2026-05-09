@@ -132,7 +132,7 @@ describe("POST /api/transactions", () => {
   it("creates transaction and returns 201 on valid request", async () => {
     auth.mockResolvedValue(session)
     const mockCreated = { id: "tx2", merchantName: "Tesco", totalAmount: 100 }
-    prisma.$transaction.mockImplementation(async (cb) => cb({
+    prisma.$transaction.mockImplementation(async (cb: (tx: any) => Promise<any>) => cb({
       transaction: { create: jest.fn().mockResolvedValue(mockCreated) },
       transactionSplit: { create: jest.fn() },
       notification: { create: jest.fn() },

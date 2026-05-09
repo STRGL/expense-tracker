@@ -36,11 +36,11 @@ const NEGATIVE_CSV = `Date,Description,Amount
 15/04/2026,REFUND FROM AMAZON,-18.99`
 
 function makeTransactionMock() {
-  const rowCreates = []
-  prisma.$transaction.mockImplementation(async (cb) =>
+  const rowCreates: any[] = []
+  prisma.$transaction.mockImplementation(async (cb: (tx: any) => Promise<any>) =>
     cb({
       importBatch: { create: jest.fn().mockResolvedValue({ id: "batch-1" }) },
-      importRow: { create: jest.fn().mockImplementation(async ({ data }) => { rowCreates.push(data); return data }) },
+      importRow: { create: jest.fn().mockImplementation(async ({ data }: { data: any }) => { rowCreates.push(data); return data }) },
     })
   )
   return rowCreates
@@ -73,7 +73,7 @@ describe("POST /api/imports", () => {
 
   it("creates an import batch and returns 201 with the batch id", async () => {
     auth.mockResolvedValue(session)
-    prisma.$transaction.mockImplementation(async (cb) =>
+    prisma.$transaction.mockImplementation(async (cb: (tx: any) => Promise<any>) =>
       cb({
         importBatch: { create: jest.fn().mockResolvedValue({ id: "batch-1" }) },
         importRow: { create: jest.fn() },
