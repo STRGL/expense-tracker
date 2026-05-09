@@ -80,6 +80,7 @@ interface Props {
 export default function TransactionDialog({ transaction, onClose, onSaved }: Props) {
   const [detail, setDetail] = useState<TransactionDetail | null>(null)
   const [userId, setUserId] = useState<string | null>(null)
+  const [userWage, setUserWage] = useState<number | null | undefined>(undefined)
   const [mode, setMode] = useState<"view" | "edit">("view")
   const [tags, setTags] = useState<FlatTag[]>([])
   const [myTagId, setMyTagId] = useState<string | null>(transaction?.myTagId ?? null)
@@ -94,7 +95,7 @@ export default function TransactionDialog({ transaction, onClose, onSaved }: Pro
     const ok = (r: Response) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() }
     Promise.all([
       fetch(`/api/transactions/${transaction.id}`).then(ok) as Promise<TransactionDetail>,
-      fetch("/api/profile").then(ok) as Promise<{ id: string }>,
+      fetch("/api/profile").then(ok) as Promise<{ id: string; wage: number | null }>,
       fetch("/api/tags").then(ok) as Promise<TagWithChildren[]>,
     ]).then(([det, profile, tagTree]) => {
       setDetail({
@@ -107,6 +108,7 @@ export default function TransactionDialog({ transaction, onClose, onSaved }: Pro
         createdById: det.createdById ?? "",
       })
       setUserId(profile.id)
+      setUserWage(profile.wage)
       setMyTagId(det.mySplit?.tagId ?? null)
       const flat: FlatTag[] = []
       for (const parent of tagTree) {
@@ -304,9 +306,12 @@ export default function TransactionDialog({ transaction, onClose, onSaved }: Pro
               </div>
               {detail.mySplit?.splitMethod === "proportional" && (detail.mySplit?.amount ?? 0) === 0 && (
                 <p className="text-xs text-muted-foreground mt-1.5">
-                  Your share will calculate once you{" "}
-                  <a href="/settings" className="underline hover:text-foreground transition-colors">set your annual wage</a>
-                  {" "}in Settings.
+                  {userWage
+                    ? "Amounts are pending — waiting for other participants to set their wage."
+                    : <>Your share will calculate once you{" "}
+                        <a href="/settings" className="underline hover:text-foreground transition-colors">set your annual wage</a>
+                        {" "}in Settings.</>
+                  }
                 </p>
               )}
             </div>
