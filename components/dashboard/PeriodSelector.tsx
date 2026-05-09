@@ -2,20 +2,41 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { isAtCurrentMonth, navigatePeriod } from "@/lib/period-utils"
+import { isAtCurrentMonth, navigatePeriod, type Preset } from "@/lib/period-utils"
 
-const PRESETS = ["monthly", "quarterly", "yearly", "custom"]
-const PRESET_LABELS = { monthly: "Month", quarterly: "Quarter", yearly: "Year", custom: "Custom" }
+export type DashboardPreset = Preset | "custom"
 
-export default function PeriodSelector({ preset, year, month, label, customFrom, customTo, onChange }) {
-  const atCurrent = preset !== "custom" && isAtCurrentMonth(preset, year, month)
+export interface DashboardPeriod {
+  preset: DashboardPreset
+  year: number
+  month: number
+  customFrom?: string
+  customTo?: string
+}
 
-  function nav(direction) {
-    const next = navigatePeriod(preset, year, month, direction)
+const PRESETS: DashboardPreset[] = ["monthly", "quarterly", "yearly", "custom"]
+const PRESET_LABELS: Record<DashboardPreset, string> = { monthly: "Month", quarterly: "Quarter", yearly: "Year", custom: "Custom" }
+
+interface Props {
+  preset: DashboardPreset
+  year: number
+  month: number
+  label: string
+  customFrom?: string
+  customTo?: string
+  onChange: (period: DashboardPeriod) => void
+}
+
+export default function PeriodSelector({ preset, year, month, label, customFrom, customTo, onChange }: Props) {
+  const atCurrent = preset !== "custom" && isAtCurrentMonth(preset as Preset, year, month)
+
+  function nav(direction: 1 | -1) {
+    if (preset === "custom") return
+    const next = navigatePeriod(preset as Preset, year, month, direction)
     onChange({ preset, ...next })
   }
 
-  function setPreset(p) {
+  function setPreset(p: DashboardPreset) {
     onChange({ preset: p, year, month, customFrom, customTo })
   }
 

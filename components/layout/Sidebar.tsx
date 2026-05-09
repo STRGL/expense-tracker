@@ -13,26 +13,45 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react"
+import type { LucideIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
-const NAV_ITEMS = [
+interface NavItemData {
+  href: string
+  label: string
+  icon: LucideIcon
+}
+
+interface SidebarProps {
+  collapsed: boolean
+  onToggle: () => void
+  isAdmin: boolean
+}
+
+interface NavItemProps {
+  item: NavItemData
+  pathname: string
+  collapsed: boolean
+}
+
+const NAV_ITEMS: NavItemData[] = [
   { href: "/dashboard",    label: "Dashboard",   icon: LayoutDashboard },
   { href: "/transactions", label: "Transactions", icon: ArrowLeftRight },
   { href: "/imports",      label: "Import",       icon: Upload },
   { href: "/search",       label: "Search",       icon: Search },
 ]
 
-const BOTTOM_ITEMS = [
+const BOTTOM_ITEMS: NavItemData[] = [
   { href: "/settings",     label: "Settings",     icon: Settings },
 ]
 
-const ADMIN_ITEMS = [
+const ADMIN_ITEMS: NavItemData[] = [
   { href: "/admin", label: "User Management", icon: Users },
 ]
 
-export default function Sidebar({ collapsed, onToggle, isAdmin }) {
+export default function Sidebar({ collapsed, onToggle, isAdmin }: SidebarProps) {
   const pathname = usePathname()
 
   return (
@@ -83,7 +102,7 @@ export default function Sidebar({ collapsed, onToggle, isAdmin }) {
   )
 }
 
-function NavItem({ item, pathname, collapsed }) {
+function NavItem({ item, pathname, collapsed }: NavItemProps) {
   const Icon = item.icon
   const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
 

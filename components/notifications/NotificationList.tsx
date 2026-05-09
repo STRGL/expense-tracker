@@ -3,10 +3,10 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import NotificationItem from "./NotificationItem"
+import NotificationItem, { type NotificationData } from "./NotificationItem"
 
 export default function NotificationList() {
-  const [notifications, setNotifications] = useState([])
+  const [notifications, setNotifications] = useState<NotificationData[]>([])
   const [loading, setLoading] = useState(true)
 
   async function load() {

@@ -1,15 +1,20 @@
 import WidgetContainer from "../WidgetContainer"
+import type { DashboardData } from "@/types/dashboard"
 
-function formatAmount(n) {
+function formatAmount(n: number) {
   return new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(n)
 }
 
-function formatDate(d) {
+function formatDate(d: string | Date | null | undefined) {
   if (!d) return ""
   return new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })
 }
 
-export default function SummaryCards({ data }) {
+interface Props {
+  data: DashboardData | null | undefined
+}
+
+export default function SummaryCards({ data }: Props) {
   const { totalSpend, biggestTransaction, mostUsedTag } = data?.summary ?? {}
   return (
     <WidgetContainer title="Summary" empty={!totalSpend && totalSpend !== 0} insufficient={false}>

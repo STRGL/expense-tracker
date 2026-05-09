@@ -8,10 +8,24 @@ import { Label } from "@/components/ui/label"
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog"
+import type { TransactionDetail } from "./TransactionDialog"
 
-export default function SuggestChangeForm({ transaction, mySplit, onClose, onSubmitted }) {
-  const [unlocked, setUnlocked] = useState({})
-  const [values, setValues] = useState({
+type FieldKey = "date" | "merchantName" | "totalAmount" | "notes" | "mySplitAmount"
+
+interface MySplit {
+  amount: number
+}
+
+interface Props {
+  transaction: TransactionDetail
+  mySplit: MySplit | null
+  onClose: () => void
+  onSubmitted?: () => void
+}
+
+export default function SuggestChangeForm({ transaction, mySplit, onClose, onSubmitted }: Props) {
+  const [unlocked, setUnlocked] = useState<Partial<Record<FieldKey, boolean>>>({})
+  const [values, setValues] = useState<Record<FieldKey, string>>({
     date: transaction.date ? new Date(transaction.date).toISOString().slice(0, 10) : "",
     merchantName: transaction.merchantName ?? "",
     totalAmount: String(transaction.totalAmount ?? ""),
@@ -21,11 +35,11 @@ export default function SuggestChangeForm({ transaction, mySplit, onClose, onSub
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState("")
 
-  function toggle(field) {
+  function toggle(field: FieldKey) {
     setUnlocked((u) => ({ ...u, [field]: !u[field] }))
   }
 
-  const FIELDS = [
+  const FIELDS: Array<{ key: FieldKey; label: string; type: string }> = [
     { key: "date", label: "Date", type: "date" },
     { key: "merchantName", label: "Merchant name", type: "text" },
     { key: "totalAmount", label: "Total amount (£)", type: "number" },
@@ -33,7 +47,7 @@ export default function SuggestChangeForm({ transaction, mySplit, onClose, onSub
     { key: "mySplitAmount", label: "My split amount (£)", type: "number" },
   ]
 
-  const originalValues = {
+  const originalValues: Record<FieldKey, string> = {
     date: transaction.date ? new Date(transaction.date).toISOString().slice(0, 10) : "",
     merchantName: transaction.merchantName ?? "",
     totalAmount: String(transaction.totalAmount ?? ""),
@@ -43,7 +57,7 @@ export default function SuggestChangeForm({ transaction, mySplit, onClose, onSub
 
   async function handleSubmit() {
     setError("")
-    const diff = {}
+    const diff: Partial<Record<FieldKey, { was: string; suggested: string }>> = {}
     for (const { key } of FIELDS) {
       if (unlocked[key] && values[key] !== originalValues[key]) {
         diff[key] = { was: originalValues[key], suggested: values[key] }

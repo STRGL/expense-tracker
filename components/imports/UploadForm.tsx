@@ -5,17 +5,20 @@ import { useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Papa from "papaparse"
 import { Upload } from "lucide-react"
+import type { ChangeEvent, FormEvent } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { detectDateFormat } from "@/lib/date-detector"
 
+type CSVRow = Record<string, string>
+
 export default function UploadForm() {
   const router = useRouter()
-  const fileRef = useRef(null)
-  const [headers, setHeaders] = useState([])
-  const [preview, setPreview] = useState([])
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [headers, setHeaders] = useState<string[]>([])
+  const [preview, setPreview] = useState<CSVRow[]>([])
   const [csvText, setCsvText] = useState("")
   const [bankName, setBankName] = useState("")
   const [dateColumn, setDateColumn] = useState("")
@@ -29,15 +32,15 @@ export default function UploadForm() {
   const [error, setError] = useState("")
   const [fileName, setFileName] = useState("")
 
-  function handleFile(e) {
+  function handleFile(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
     setFileName(file.name)
     const reader = new FileReader()
     reader.onload = (ev) => {
-      const text = ev.target.result
+      const text = String(ev.target?.result ?? "")
       setCsvText(text)
-      const { data, meta } = Papa.parse(text, { header: true, skipEmptyLines: true })
+      const { data, meta } = Papa.parse<CSVRow>(text, { header: true, skipEmptyLines: true })
       const cols = meta.fields ?? []
       setHeaders(cols)
       setPreview(data.slice(0, 5))
@@ -48,7 +51,7 @@ export default function UploadForm() {
     reader.readAsText(file)
   }
 
-  function handleDateColumnChange(col) {
+  function handleDateColumnChange(col: string) {
     setDateColumn(col)
     if (preview.length > 0 && col) {
       const samples = preview.map(r => r[col]).filter(Boolean)
@@ -58,7 +61,7 @@ export default function UploadForm() {
     }
   }
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setError("")
     if (!csvText) { setError("Please select a CSV file."); return }
@@ -97,7 +100,7 @@ export default function UploadForm() {
           <div className="space-y-2">
             <Label htmlFor="file">CSV file</Label>
             <div className="flex items-center gap-3">
-              <Input
+              <input
                 id="file"
                 type="file"
                 accept=".csv,text/csv"

@@ -3,8 +3,8 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
-import { getDefaultPeriod, computeDateRange } from "@/lib/period-utils"
-import PeriodSelector from "./PeriodSelector"
+import { getDefaultPeriod, computeDateRange, type Preset } from "@/lib/period-utils"
+import PeriodSelector, { type DashboardPeriod } from "./PeriodSelector"
 import WidgetGrid from "./WidgetGrid"
 import SummaryCards from "./widgets/SummaryCards"
 import SpendByTag from "./widgets/SpendByTag"
@@ -12,11 +12,14 @@ import SpendOverTime from "./widgets/SpendOverTime"
 import TagTrends from "./widgets/TagTrends"
 import TopMerchants from "./widgets/TopMerchants"
 import TopTransactions from "./widgets/TopTransactions"
+import type { DashboardConfig, DashboardData, DashboardWidget, DashboardWidgetType } from "@/types/dashboard"
 
-const WIDGET_COMPONENTS = {
+type WidgetRenderer = (data: DashboardData | null, w: DashboardWidget) => React.ReactNode
+
+const WIDGET_COMPONENTS: Record<DashboardWidgetType, WidgetRenderer> = {
   summary_cards: (data) => <SummaryCards data={data} />,
-  spend_by_tag: (data, w) => <SpendByTag data={data} chartType={w.chartType ?? "donut"} />,
-  spend_over_time: (data, w) => <SpendOverTime data={data} chartType={w.chartType ?? "bar"} />,
+  spend_by_tag: (data, w) => <SpendByTag data={data} chartType={(w.chartType as "donut" | "bar") ?? "donut"} />,
+  spend_over_time: (data, w) => <SpendOverTime data={data} chartType={(w.chartType as "bar" | "line") ?? "bar"} />,
   tag_trends_increase: (data) => <TagTrends data={data} direction="increase" />,
   tag_trends_decrease: (data) => <TagTrends data={data} direction="decrease" />,
   top_merchants: (data) => <TopMerchants data={data} />,
@@ -25,9 +28,9 @@ const WIDGET_COMPONENTS = {
 
 export default function DashboardShell() {
   const defaultPeriod = getDefaultPeriod()
-  const [period, setPeriod] = useState(defaultPeriod)
-  const [dashData, setDashData] = useState(null)
-  const [config, setConfig] = useState(null)
+  const [period, setPeriod] = useState<DashboardPeriod>(defaultPeriod)
+  const [dashData, setDashData] = useState<DashboardData | null>(null)
+  const [config, setConfig] = useState<DashboardConfig | null>(null)
   const [locked, setLocked] = useState(true)
   const [loading, setLoading] = useState(true)
 
@@ -37,9 +40,9 @@ export default function DashboardShell() {
         dateTo: new Date(period.customTo + "T23:59:59"),
         label: `${period.customFrom} – ${period.customTo}`,
       }
-    : computeDateRange(period.preset, period.year, period.month)
+    : computeDateRange(period.preset as Preset, period.year, period.month)
 
-  const { dateFrom, dateTo, label } = periodRange ?? { dateFrom: null, dateTo: null, label: "" }
+  const { dateFrom, dateTo, label } = periodRange ?? { dateFrom: null as Date | null, dateTo: null as Date | null, label: "" }
 
   useEffect(() => {
     if (!dateFrom || !dateTo) return
@@ -55,9 +58,9 @@ export default function DashboardShell() {
     fetch("/api/dashboard/config").then(r => r.json()).then(setConfig)
   }, [])
 
-  const handleWidgetReorder = useCallback(async (newWidgets) => {
+  const handleWidgetReorder = useCallback(async (newWidgets: DashboardWidget[]) => {
     if (!config) return
-    const updated = { ...config, widgets: newWidgets }
+    const updated: DashboardConfig = { ...config, widgets: newWidgets }
     setConfig(updated)
     await fetch("/api/dashboard/config", {
       method: "PUT",

@@ -6,27 +6,29 @@ import { useRouter } from "next/navigation"
 import { Search } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import TransactionDialog from "@/components/transactions/TransactionDialog"
+import type { TransactionListItem } from "@/types/api"
+import type { ChangeEvent, KeyboardEvent } from "react"
 
-function formatAmount(n) {
+function formatAmount(n: number) {
   return new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(n)
 }
 
-function formatDate(d) {
+function formatDate(d: string | Date) {
   return new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
 }
 
 export default function SearchBar() {
   const router = useRouter()
   const [query, setQuery] = useState("")
-  const [results, setResults] = useState([])
+  const [results, setResults] = useState<TransactionListItem[]>([])
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [selected, setSelected] = useState(null)
-  const containerRef = useRef(null)
-  const timerRef = useRef(null)
+  const [selected, setSelected] = useState<TransactionListItem | null>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const search = useCallback((q) => {
-    clearTimeout(timerRef.current)
+  const search = useCallback((q: string) => {
+    if (timerRef.current) clearTimeout(timerRef.current)
     if (!q.trim()) { setResults([]); setOpen(false); return }
     timerRef.current = setTimeout(async () => {
       setLoading(true)
@@ -45,14 +47,14 @@ export default function SearchBar() {
     }, 300)
   }, [])
 
-  function handleChange(e) {
+  function handleChange(e: ChangeEvent<HTMLInputElement>) {
     const q = e.target.value
     setQuery(q)
     search(q)
   }
 
-  function handleKeyDown(e) {
-    if (e.key === "Escape") { setOpen(false); e.target.blur() }
+  function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Escape") { setOpen(false); (e.target as HTMLInputElement).blur() }
     if (e.key === "Enter" && query.trim()) {
       setOpen(false)
       router.push(`/search?q=${encodeURIComponent(query)}`)
@@ -60,8 +62,8 @@ export default function SearchBar() {
   }
 
   useEffect(() => {
-    function handleClick(e) {
-      if (containerRef.current && !containerRef.current.contains(e.target)) {
+    function handleClick(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setOpen(false)
       }
     }
@@ -69,7 +71,7 @@ export default function SearchBar() {
     return () => document.removeEventListener("mousedown", handleClick)
   }, [])
 
-  function viewInMonth(tx) {
+  function viewInMonth(tx: TransactionListItem) {
     const d = new Date(tx.date)
     const from = new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10)
     const to = new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().slice(0, 10)
@@ -77,7 +79,7 @@ export default function SearchBar() {
     router.push(`/transactions?dateFrom=${from}&dateTo=${to}`)
   }
 
-  function allFromMerchant(tx) {
+  function allFromMerchant(tx: TransactionListItem) {
     setOpen(false)
     router.push(`/search?q=${encodeURIComponent(tx.merchantName)}`)
   }

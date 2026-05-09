@@ -1,13 +1,14 @@
 // components/dashboard/WidgetGrid.js
 "use client"
 
-import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from "@dnd-kit/core"
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core"
 import { SortableContext, useSortable, rectSortingStrategy, arrayMove } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { cn } from "@/lib/utils"
+import type { DashboardWidget, DashboardWidgetType } from "@/types/dashboard"
 
 // How many of the 3 grid columns each widget type spans
-const WIDGET_SPANS = {
+const WIDGET_SPANS: Record<DashboardWidgetType, string> = {
   summary_cards:       "lg:col-span-3 md:col-span-2",
   spend_by_tag:        "lg:col-span-1",
   spend_over_time:     "lg:col-span-2",
@@ -17,7 +18,13 @@ const WIDGET_SPANS = {
   top_transactions:    "lg:col-span-2",
 }
 
-function SortableItem({ widget, locked, children }) {
+interface SortableItemProps {
+  widget: DashboardWidget
+  locked: boolean
+  children: React.ReactNode
+}
+
+function SortableItem({ widget, locked, children }: SortableItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: widget.id,
     disabled: locked,
@@ -39,12 +46,19 @@ function SortableItem({ widget, locked, children }) {
   )
 }
 
-export default function WidgetGrid({ widgets, locked, onReorder, children }) {
+interface WidgetGridProps {
+  widgets: DashboardWidget[]
+  locked: boolean
+  onReorder: (widgets: DashboardWidget[]) => void
+  children: React.ReactNode
+}
+
+export default function WidgetGrid({ widgets, locked, onReorder, children }: WidgetGridProps) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   )
 
-  function handleDragEnd({ active, over }) {
+  function handleDragEnd({ active, over }: DragEndEvent) {
     if (!over || active.id === over.id) return
     const oldIndex = widgets.findIndex(w => w.id === active.id)
     const newIndex = widgets.findIndex(w => w.id === over.id)

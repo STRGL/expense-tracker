@@ -8,9 +8,33 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
-import SplitPanel from "./SplitPanel"
+import SplitPanel, { type Split } from "./SplitPanel"
+import type { FormEvent } from "react"
 
-export default function TransactionForm({ initial, currentUserId, onSaved, onCancel }) {
+interface TransactionInitial {
+  id?: string
+  date?: string | Date
+  merchantRaw?: string
+  merchantName?: string
+  totalAmount?: number
+  notes?: string | null
+  splits?: Split[]
+}
+
+interface MerchantAlias {
+  id: string
+  rawName: string
+  niceName: string
+}
+
+interface Props {
+  initial?: TransactionInitial | null
+  currentUserId: string
+  onSaved?: () => void
+  onCancel?: () => void
+}
+
+export default function TransactionForm({ initial, currentUserId, onSaved, onCancel }: Props) {
   const isEdit = !!initial
   // Determine initial type from sign of existing amount
   const initialIsCredit = (initial?.totalAmount ?? 0) < 0
@@ -22,7 +46,7 @@ export default function TransactionForm({ initial, currentUserId, onSaved, onCan
     totalAmount: initial?.totalAmount ? String(Math.abs(initial.totalAmount)) : "",
     notes: initial?.notes ?? "",
   })
-  const [splits, setSplits] = useState(
+  const [splits, setSplits] = useState<Split[]>(
     initial?.splits
       ? initial.splits.map(s => ({ ...s, amount: Math.abs(s.amount) }))
       : [{ userId: currentUserId, amount: Math.abs(Number(initial?.totalAmount ?? 0)), splitMethod: "equal", tagId: null }]
@@ -30,21 +54,21 @@ export default function TransactionForm({ initial, currentUserId, onSaved, onCan
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
 
-  const [aliases, setAliases] = useState([])
-  const [suggestions, setSuggestions] = useState([])
+  const [, setAliases] = useState<MerchantAlias[]>([])
+  const [suggestions, setSuggestions] = useState<MerchantAlias[]>([])
   const [showSuggestions, setShowSuggestions] = useState(false)
-  const fuseRef = useRef(null)
+  const fuseRef = useRef<Fuse<MerchantAlias> | null>(null)
 
   useEffect(() => {
     fetch("/api/aliases")
       .then((r) => r.json())
-      .then((data) => {
+      .then((data: MerchantAlias[]) => {
         setAliases(data)
-        fuseRef.current = new Fuse(data, { keys: ["rawName", "niceName"], threshold: 0.4 })
+        fuseRef.current = new Fuse<MerchantAlias>(data, { keys: ["rawName", "niceName"], threshold: 0.4 })
       })
   }, [])
 
-  function handleMerchantChange(value) {
+  function handleMerchantChange(value: string) {
     setForm((f) => ({ ...f, merchantRaw: value, merchantName: value }))
     if (fuseRef.current && value.length > 1) {
       const results = fuseRef.current.search(value).slice(0, 5)
@@ -55,12 +79,12 @@ export default function TransactionForm({ initial, currentUserId, onSaved, onCan
     }
   }
 
-  function selectSuggestion(alias) {
+  function selectSuggestion(alias: MerchantAlias) {
     setForm((f) => ({ ...f, merchantName: alias.niceName }))
     setShowSuggestions(false)
   }
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setError("")
 
@@ -78,7 +102,7 @@ export default function TransactionForm({ initial, currentUserId, onSaved, onCan
     }
 
     setSaving(true)
-    const url = isEdit ? `/api/transactions/${initial.id}` : "/api/transactions"
+    const url = isEdit && initial ? `/api/transactions/${initial.id}` : "/api/transactions"
     const method = isEdit ? "PUT" : "POST"
 
     const signedSplits = splits.map(s => ({

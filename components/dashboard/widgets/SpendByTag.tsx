@@ -1,28 +1,39 @@
 "use client"
 
 import { useState } from "react"
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts"
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts"
 import WidgetContainer from "../WidgetContainer"
+import type { DashboardData } from "@/types/dashboard"
 
 const COLOURS = ["#f97316", "#3b82f6", "#22c55e", "#8b5cf6", "#ec4899", "#eab308", "#6b7280", "#ef4444"]
 
-function formatAmount(n) {
+function formatAmount(n: number) {
   return new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 }).format(n)
 }
 
-function CustomTooltip({ active, payload }) {
+interface TooltipPayloadItem {
+  name?: string
+  value?: number
+}
+
+function CustomTooltip({ active, payload }: { active?: boolean; payload?: TooltipPayloadItem[] }) {
   if (!active || !payload?.length) return null
   const { name, value } = payload[0]
   return (
     <div className="bg-background border rounded-md px-2 py-1.5 text-xs shadow">
       <p className="font-medium">{name}</p>
-      <p>{formatAmount(value)}</p>
+      <p>{formatAmount(value ?? 0)}</p>
     </div>
   )
 }
 
-export default function SpendByTag({ data, chartType = "donut" }) {
-  const [drillTarget, setDrillTarget] = useState(null)
+interface Props {
+  data: DashboardData | null | undefined
+  chartType?: "donut" | "bar"
+}
+
+export default function SpendByTag({ data, chartType = "donut" }: Props) {
+  const [drillTarget, setDrillTarget] = useState<string | null>(null)
 
   const allTags = data?.spendByTag ?? []
   const empty = allTags.length === 0
@@ -62,7 +73,7 @@ export default function SpendByTag({ data, chartType = "donut" }) {
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `£${v}`} axisLine={false} tickLine={false} />
                 <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="value" radius={[4, 4, 0, 0]} onClick={d => { if (!drillTarget) setDrillTarget(d.tagId) }}>
+                <Bar dataKey="value" radius={[4, 4, 0, 0]} onClick={((d: unknown) => { const tagId = (d as { tagId?: string | null }).tagId; if (!drillTarget && tagId) setDrillTarget(tagId) }) as never}>
                   {chartData.map((entry) => (
                     <Cell key={entry.name} fill={entry.fill} />
                   ))}
@@ -79,7 +90,7 @@ export default function SpendByTag({ data, chartType = "donut" }) {
                   innerRadius={chartType === "donut" ? "50%" : 0}
                   outerRadius="80%"
                   dataKey="value"
-                  onClick={d => { if (!drillTarget) setDrillTarget(d.tagId) }}
+                  onClick={((d: unknown) => { const tagId = (d as { tagId?: string | null }).tagId; if (!drillTarget && tagId) setDrillTarget(tagId) }) as never}
                   style={{ cursor: drillTarget ? "default" : "pointer" }}
                 >
                   {chartData.map((entry) => (

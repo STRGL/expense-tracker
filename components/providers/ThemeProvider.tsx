@@ -2,12 +2,24 @@
 
 import { createContext, useContext, useState } from "react"
 
-const ThemeCtx = createContext({ theme: "light", setTheme: () => {} })
+type Theme = "light" | "dark"
 
-export function ThemeProvider({ children, initialTheme = "light" }) {
-  const [theme, setThemeState] = useState(initialTheme)
+interface ThemeContextValue {
+  theme: Theme
+  setTheme: (t: Theme) => void
+}
 
-  function setTheme(t) {
+const ThemeCtx = createContext<ThemeContextValue>({ theme: "light", setTheme: () => {} })
+
+interface Props {
+  children: React.ReactNode
+  initialTheme?: Theme
+}
+
+export function ThemeProvider({ children, initialTheme = "light" }: Props) {
+  const [theme, setThemeState] = useState<Theme>(initialTheme)
+
+  function setTheme(t: Theme) {
     setThemeState(t)
     document.cookie = `theme=${t};path=/;max-age=31536000;samesite=lax`
     if (t === "dark") {

@@ -1,10 +1,15 @@
 import WidgetContainer from "../WidgetContainer"
+import type { DashboardData } from "@/types/dashboard"
 
-function formatAmount(n) {
+function formatAmount(n: number) {
   return new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(n)
 }
 
-export default function TopMerchants({ data }) {
+interface Props {
+  data: DashboardData | null | undefined
+}
+
+export default function TopMerchants({ data }: Props) {
   const merchants = data?.topMerchants ?? []
   return (
     <WidgetContainer title="Top 3 merchants" empty={merchants.length === 0} insufficient={false}>

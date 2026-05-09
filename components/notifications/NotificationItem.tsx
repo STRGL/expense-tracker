@@ -4,17 +4,44 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 
-function formatDate(dateStr) {
+function formatDate(dateStr: string | Date) {
   return new Date(dateStr).toLocaleDateString("en-GB", {
     day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
   })
 }
 
-function formatAmount(amount) {
+function formatAmount(amount: number) {
   return new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(amount)
 }
 
-const TYPE_LABELS = {
+interface NotificationTransaction {
+  id: string
+  merchantName: string
+  totalAmount: number
+}
+
+interface NotificationSuggestion {
+  id: string
+  suggestedChanges: string
+}
+
+export interface NotificationData {
+  id: string
+  type: string
+  message: string | null
+  read: boolean
+  createdAt: string
+  transactionId: string | null
+  transaction: NotificationTransaction | null
+  suggestion: NotificationSuggestion | null
+}
+
+interface Props {
+  notification: NotificationData
+  onAction?: () => void
+}
+
+const TYPE_LABELS: Record<string, string> = {
   split_created: "Split a transaction with you",
   split_updated: "Updated a split with you",
   split_removed: "Declined your split",
@@ -24,13 +51,13 @@ const TYPE_LABELS = {
   missing_wage_for_split: "Action required: Wage missing for split",
 }
 
-export default function NotificationItem({ notification, onAction }) {
+export default function NotificationItem({ notification, onAction }: Props) {
   const [responding, setResponding] = useState(false)
 
   const tx = notification.transaction
   const label = TYPE_LABELS[notification.type] ?? notification.type
 
-  async function respond(action) {
+  async function respond(action: string) {
     if (!notification.suggestion) return
     setResponding(true)
     await fetch(
@@ -84,7 +111,7 @@ export default function NotificationItem({ notification, onAction }) {
           <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
             Suggested changes
           </p>
-          {Object.entries(JSON.parse(notification.suggestion.suggestedChanges)).map(([field, diff]) => (
+          {Object.entries(JSON.parse(notification.suggestion.suggestedChanges) as Record<string, { was: unknown; suggested: unknown }>).map(([field, diff]) => (
             <div key={field} className="flex items-center gap-2 text-sm">
               <span className="text-muted-foreground w-28 shrink-0 capitalize">
                 {field.replace(/([A-Z])/g, " $1").toLowerCase()}

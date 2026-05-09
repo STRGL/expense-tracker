@@ -1,10 +1,16 @@
 import WidgetContainer from "../WidgetContainer"
+import type { DashboardData } from "@/types/dashboard"
 
-function formatAmount(n) {
+function formatAmount(n: number) {
   return new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(n)
 }
 
-export default function TagTrends({ data, direction }) {
+interface Props {
+  data: DashboardData | null | undefined
+  direction: "increase" | "decrease"
+}
+
+export default function TagTrends({ data, direction }: Props) {
   const trends = direction === "increase"
     ? (data?.tagTrends?.increases ?? [])
     : (data?.tagTrends?.decreases ?? [])

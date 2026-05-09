@@ -1,14 +1,19 @@
 import WidgetContainer from "../WidgetContainer"
+import type { DashboardData } from "@/types/dashboard"
 
-function formatAmount(n) {
+function formatAmount(n: number) {
   return new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(n)
 }
 
-function formatDate(d) {
+function formatDate(d: string | Date) {
   return new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })
 }
 
-export default function TopTransactions({ data }) {
+interface Props {
+  data: DashboardData | null | undefined
+}
+
+export default function TopTransactions({ data }: Props) {
   const transactions = data?.topTransactions ?? []
   return (
     <WidgetContainer title="Top 15 transactions" empty={transactions.length === 0} insufficient={false}>

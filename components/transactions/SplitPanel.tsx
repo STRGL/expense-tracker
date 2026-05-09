@@ -2,18 +2,38 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { calculateSplits } from "@/lib/split-calculator"
+import { calculateSplits, type SplitResult, type ProportionalResult } from "@/lib/split-calculator"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
-export default function SplitPanel({ totalAmount, currentUserId, onChange }) {
+type SplitMethod = "equal" | "proportional" | "specified"
+
+export interface Split {
+  userId: string
+  amount: number
+  splitMethod: string
+  tagId: string | null
+}
+
+interface ActiveUser {
+  id: string
+  name: string
+  wage?: number | null
+}
+
+interface Props {
+  totalAmount: number
+  currentUserId: string
+  onChange: (splits: Split[]) => void
+}
+
+export default function SplitPanel({ totalAmount, currentUserId, onChange }: Props) {
   const [splitting, setSplitting] = useState(false)
-  const [method, setMethod] = useState("equal")
-  const [users, setUsers] = useState([])
-  const [selectedIds, setSelectedIds] = useState([])
-  const [amounts, setAmounts] = useState({})
+  const [method, setMethod] = useState<SplitMethod>("equal")
+  const [users, setUsers] = useState<ActiveUser[]>([])
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [amounts, setAmounts] = useState<Record<string, number>>({})
   const [isPending, setIsPending] = useState(false)
 
   useEffect(() => {
@@ -35,10 +55,10 @@ export default function SplitPanel({ totalAmount, currentUserId, onChange }) {
           const u = users.find((u) => u.id === id)
           return { id, wage: u?.wage }
         })
-        const result = calculateSplits(totalAmount, method, userObjs)
-        const computedSplits = result.splits ?? result
-        const pending = !!result.pendingData
-        
+        const result: SplitResult[] | ProportionalResult = calculateSplits(totalAmount, method, userObjs)
+        const computedSplits: SplitResult[] = Array.isArray(result) ? result : result.splits
+        const pending = Array.isArray(result) ? false : result.pendingData
+
         const newAmounts = Object.fromEntries(computedSplits.map((s) => [s.userId, s.amount]))
         setAmounts(newAmounts)
         setIsPending(pending)
@@ -59,7 +79,7 @@ export default function SplitPanel({ totalAmount, currentUserId, onChange }) {
     }
   }, [splitting, method, selectedIds, totalAmount, users, currentUserId])
 
-  function toggleUser(id) {
+  function toggleUser(id: string) {
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     )
@@ -92,7 +112,7 @@ export default function SplitPanel({ totalAmount, currentUserId, onChange }) {
         <div className="space-y-3 pl-2 border-l-2 border-muted">
           <div className="flex gap-2">
             <TooltipProvider>
-              {["equal", "proportional", "specified"].map((m) => {
+              {(["equal", "proportional", "specified"] as SplitMethod[]).map((m) => {
                 const label = m === "equal" ? "Equal" : m === "proportional" ? "By wage" : "Custom"
                 const disabled = m === "proportional" && !canProportional
                 const button = (

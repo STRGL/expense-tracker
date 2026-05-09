@@ -9,12 +9,32 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import TransactionDialog from "@/components/transactions/TransactionDialog"
+import type { TransactionListItem } from "@/types/api"
+import type { TagWithChildren } from "@/lib/tag-utils"
+import type { FormEvent } from "react"
 
-function formatAmount(n) {
+interface FlatTag {
+  id: string
+  name: string
+  colour: string
+  parentId: string | null
+}
+
+interface SearchFilters {
+  dateFrom: string
+  dateTo: string
+  tagId: string
+  minAmount: string
+  maxAmount: string
+  source: string
+  split: string
+}
+
+function formatAmount(n: number) {
   return new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(n)
 }
 
-function formatDate(d) {
+function formatDate(d: string | Date) {
   return new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
 }
 
@@ -24,13 +44,13 @@ export default function SearchPage() {
   const initialQ = searchParams.get("q") ?? ""
 
   const [query, setQuery] = useState(initialQ)
-  const [results, setResults] = useState([])
+  const [results, setResults] = useState<TransactionListItem[]>([])
   const [loading, setLoading] = useState(false)
   const [showFilters, setShowFilters] = useState(false)
-  const [selected, setSelected] = useState(null)
-  const [tags, setTags] = useState([])
+  const [selected, setSelected] = useState<TransactionListItem | null>(null)
+  const [tags, setTags] = useState<FlatTag[]>([])
 
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<SearchFilters>({
     dateFrom: "", dateTo: "",
     tagId: "",
     minAmount: "", maxAmount: "",
@@ -39,14 +59,14 @@ export default function SearchPage() {
   })
 
   useEffect(() => {
-    fetch("/api/tags").then(r => r.json()).then(tree => {
-      const flat = []
+    fetch("/api/tags").then(r => r.json()).then((tree: TagWithChildren[]) => {
+      const flat: FlatTag[] = []
       for (const p of tree) { flat.push(p); for (const c of p.children) flat.push(c) }
       setTags(flat)
     })
   }, [])
 
-  const runSearch = useCallback(async (q, f) => {
+  const runSearch = useCallback(async (q: string, f: SearchFilters) => {
     if (!q.trim()) { setResults([]); return }
     setLoading(true)
     try {
@@ -72,19 +92,19 @@ export default function SearchPage() {
     if (initialQ) runSearch(initialQ, filters)
   }, [])
 
-  function handleSearch(e) {
+  function handleSearch(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     router.replace(`/search?q=${encodeURIComponent(query)}`)
     runSearch(query, filters)
   }
 
-  function handleFilterChange(key, value) {
+  function handleFilterChange(key: keyof SearchFilters, value: string) {
     const updated = { ...filters, [key]: value }
     setFilters(updated)
     if (query.trim()) runSearch(query, updated)
   }
 
-  function viewInMonth(tx) {
+  function viewInMonth(tx: TransactionListItem) {
     const d = new Date(tx.date)
     const from = new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10)
     const to = new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().slice(0, 10)

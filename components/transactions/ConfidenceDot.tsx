@@ -1,10 +1,16 @@
-const COLOURS = {
+import type { ConfidenceLevel } from "@/types/imports"
+
+const COLOURS: Record<ConfidenceLevel, string> = {
   green: "#22c55e",
   amber: "#f59e0b",
   red: "#ef4444",
 }
 
-export default function ConfidenceDot({ level }) {
+interface Props {
+  level: ConfidenceLevel | null | undefined
+}
+
+export default function ConfidenceDot({ level }: Props) {
   if (!level) return null
   return (
     <span

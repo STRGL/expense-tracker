@@ -5,8 +5,15 @@ import { useState } from "react"
 import Sidebar from "./Sidebar"
 import Header from "./Header"
 import ThemeAccentProvider from "@/components/providers/ThemeAccentProvider"
+import type { AccentThemeKey } from "@/lib/accent-themes"
 
-export default function AppShell({ children, isAdmin, themeAccent }) {
+interface Props {
+  children: React.ReactNode
+  isAdmin: boolean
+  themeAccent: AccentThemeKey
+}
+
+export default function AppShell({ children, isAdmin, themeAccent }: Props) {
   const [collapsed, setCollapsed] = useState(false)
 
   return (

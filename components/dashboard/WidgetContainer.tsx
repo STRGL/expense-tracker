@@ -1,4 +1,11 @@
-export default function WidgetContainer({ title, empty, insufficient, children }) {
+interface Props {
+  title: string
+  empty: boolean
+  insufficient: boolean
+  children: React.ReactNode
+}
+
+export default function WidgetContainer({ title, empty, insufficient, children }: Props) {
   return (
     <div className="flex flex-col bg-card border rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
       <div className="px-4 py-3 border-b shrink-0 bg-muted/20">

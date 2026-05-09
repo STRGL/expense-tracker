@@ -8,18 +8,32 @@ import { Badge } from "@/components/ui/badge"
 import ConfidenceDot from "@/components/transactions/ConfidenceDot"
 import ImportRowDialog from "./ImportRowDialog"
 import BulkActionBar from "@/components/ui/BulkActionBar"
+import type { ImportRow, ImportBatch } from "@prisma/client"
+import type { ConfidenceLevel } from "@/types/imports"
+import type { TagWithChildren } from "@/lib/tag-utils"
 
-function formatDate(d) {
+interface BatchWithRows extends ImportBatch {
+  rows: ImportRow[]
+}
+
+interface FlatTag {
+  id: string
+  name: string
+  colour: string
+  parentId: string | null
+}
+
+function formatDate(d: string | Date | null | undefined) {
   if (!d) return "—"
   return new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
 }
 
-function formatAmount(a) {
+function formatAmount(a: number | null | undefined) {
   if (a == null) return "—"
   return new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(Math.abs(a))
 }
 
-function AmountCell({ amount }) {
+function AmountCell({ amount }: { amount: number | null }) {
   if (amount == null) return <span className="text-muted-foreground">—</span>
   const isCredit = amount > 0
   return (
@@ -30,15 +44,21 @@ function AmountCell({ amount }) {
   )
 }
 
-export default function ReviewTable({ batchId }) {
+interface Props {
+  batchId: string
+}
+
+type FilterValue = "all" | ConfidenceLevel
+
+export default function ReviewTable({ batchId }: Props) {
   const router = useRouter()
-  const [batch, setBatch] = useState(null)
+  const [batch, setBatch] = useState<BatchWithRows | null>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [selected, setSelected] = useState(null)
-  const [filter, setFilter] = useState("all")
-  const [allTags, setAllTags] = useState([])
-  const [selectedIds, setSelectedIds] = useState(new Set())
+  const [error, setError] = useState<string | null>(null)
+  const [selected, setSelected] = useState<ImportRow | null>(null)
+  const [filter, setFilter] = useState<FilterValue>("all")
+  const [allTags, setAllTags] = useState<FlatTag[]>([])
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [confirming, setConfirming] = useState(false)
 
   async function load() {
@@ -54,10 +74,10 @@ export default function ReviewTable({ batchId }) {
         setLoading(false)
         return
       }
-      const batchData = await batchRes.json()
+      const batchData: BatchWithRows = await batchRes.json()
       setBatch(batchData)
-      const tagTree = await tagsRes.json()
-      const flat = []
+      const tagTree: TagWithChildren[] = await tagsRes.json()
+      const flat: FlatTag[] = []
       for (const p of tagTree) { flat.push(p); for (const c of p.children) flat.push(c) }
       setAllTags(flat)
       setSelectedIds(new Set())
@@ -70,7 +90,7 @@ export default function ReviewTable({ batchId }) {
 
   useEffect(() => { load() }, [batchId])
 
-  async function handleBulkTag(tagId) {
+  async function handleBulkTag(tagId: string | null) {
     if (!batch) return
     await fetch(`/api/imports/${batchId}/rows/bulk`, {
       method: "PUT",
@@ -83,7 +103,7 @@ export default function ReviewTable({ batchId }) {
     load()
   }
 
-  async function handleBulkRename(merchantResolved) {
+  async function handleBulkRename(merchantResolved: string) {
     if (!batch) return
     await fetch(`/api/imports/${batchId}/rows/bulk`, {
       method: "PUT",
@@ -136,12 +156,14 @@ export default function ReviewTable({ batchId }) {
     </div>
   )
 
+  if (!batch) return null
+
   const filteredRows = filter === "all" ? batch.rows : batch.rows.filter(r => r.confidenceLevel === filter)
   const pendingRows = batch.rows.filter(r => r.status === "pending")
   const redPendingCount = pendingRows.filter(r => r.confidenceLevel === "red").length
   const canConfirm = batch.status !== "confirmed" && pendingRows.length > 0
 
-  function toggleSelection(id) {
+  function toggleSelection(id: string) {
     const next = new Set(selectedIds)
     if (next.has(id)) next.delete(id)
     else next.add(id)
@@ -171,7 +193,7 @@ export default function ReviewTable({ batchId }) {
         <select
           className="h-8 rounded-md border bg-background px-2 text-sm"
           value={filter}
-          onChange={e => setFilter(e.target.value)}
+          onChange={e => setFilter(e.target.value as FilterValue)}
         >
           <option value="all">All rows</option>
           <option value="red">Red only</option>
@@ -233,7 +255,7 @@ export default function ReviewTable({ batchId }) {
                     />
                   </td>
                   <td className="px-1 py-2.5">
-                    <ConfidenceDot level={row.confidenceLevel} />
+                    <ConfidenceDot level={row.confidenceLevel as ConfidenceLevel} />
                   </td>
                   <td className="px-3 py-2.5 text-muted-foreground whitespace-nowrap">
                     {formatDate(row.date)}

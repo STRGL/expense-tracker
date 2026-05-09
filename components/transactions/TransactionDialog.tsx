@@ -12,23 +12,58 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label"
 import TransactionForm from "./TransactionForm"
 import SuggestChangeForm from "./SuggestChangeForm"
+import type { TransactionListItem } from "@/types/api"
+import type { TagWithChildren } from "@/lib/tag-utils"
 
-function formatDate(dateStr) {
+function formatDate(dateStr: string | Date) {
   return new Date(dateStr).toLocaleDateString("en-GB", {
     day: "2-digit", month: "short", year: "numeric",
   })
 }
 
-function formatAmount(amount) {
+function formatAmount(amount: number) {
   return new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(amount)
 }
 
-export default function TransactionDialog({ transaction, onClose, onSaved }) {
-  const [detail, setDetail] = useState(null)
-  const [userId, setUserId] = useState(null)
-  const [mode, setMode] = useState("view") // "view" | "edit"
-  const [tags, setTags] = useState([])
-  const [myTagId, setMyTagId] = useState(transaction?.myTagId ?? null)
+interface SplitDetail {
+  id: string
+  userId: string
+  amount: number
+  splitMethod: string
+  tagId: string | null
+}
+
+export interface TransactionDetail {
+  id: string
+  date: string
+  merchantRaw: string
+  merchantName: string
+  totalAmount: number
+  notes: string | null
+  isOwner: boolean
+  splits: SplitDetail[]
+  mySplit: SplitDetail | null
+}
+
+interface FlatTag {
+  id: string
+  name: string
+  colour: string
+  parentId: string | null
+}
+
+interface Props {
+  transaction: TransactionListItem | null
+  onClose: () => void
+  onSaved?: () => void
+}
+
+export default function TransactionDialog({ transaction, onClose, onSaved }: Props) {
+  const [detail, setDetail] = useState<TransactionDetail | null>(null)
+  const [userId, setUserId] = useState<string | null>(null)
+  const [mode, setMode] = useState<"view" | "edit">("view")
+  const [tags, setTags] = useState<FlatTag[]>([])
+  const [myTagId, setMyTagId] = useState<string | null>(transaction?.myTagId ?? null)
   const [savingTag, setSavingTag] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [declining, setDeclining] = useState(false)
@@ -37,14 +72,14 @@ export default function TransactionDialog({ transaction, onClose, onSaved }) {
   useEffect(() => {
     if (!transaction) return
     Promise.all([
-      fetch(`/api/transactions/${transaction.id}`).then((r) => r.json()),
-      fetch("/api/profile").then((r) => r.json()),
-      fetch("/api/tags").then((r) => r.json()),
+      fetch(`/api/transactions/${transaction.id}`).then((r) => r.json()) as Promise<TransactionDetail>,
+      fetch("/api/profile").then((r) => r.json()) as Promise<{ id: string }>,
+      fetch("/api/tags").then((r) => r.json()) as Promise<TagWithChildren[]>,
     ]).then(([det, profile, tagTree]) => {
       setDetail(det)
       setUserId(profile.id)
       setMyTagId(det.mySplit?.tagId ?? null)
-      const flat = []
+      const flat: FlatTag[] = []
       for (const parent of tagTree) {
         flat.push(parent)
         for (const child of parent.children) flat.push(child)
@@ -54,6 +89,7 @@ export default function TransactionDialog({ transaction, onClose, onSaved }) {
   }, [transaction])
 
   async function handleTagSave() {
+    if (!transaction) return
     setSavingTag(true)
     await fetch(`/api/transactions/${transaction.id}/my-split`, {
       method: "PUT",
@@ -65,6 +101,7 @@ export default function TransactionDialog({ transaction, onClose, onSaved }) {
   }
 
   async function handleDelete() {
+    if (!transaction) return
     if (!confirm("Delete this transaction? This cannot be undone.")) return
     setDeleting(true)
     await fetch(`/api/transactions/${transaction.id}`, { method: "DELETE" })
@@ -72,7 +109,7 @@ export default function TransactionDialog({ transaction, onClose, onSaved }) {
     onSaved?.()
   }
 
-  if (!detail || !userId) {
+  if (!detail || !userId || !transaction) {
     return (
       <Dialog open onOpenChange={onClose}>
         <DialogContent>

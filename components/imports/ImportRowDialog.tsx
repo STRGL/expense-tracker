@@ -8,8 +8,24 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
+import type { ImportRow } from "@prisma/client"
+import type { TagWithChildren } from "@/lib/tag-utils"
 
-export default function ImportRowDialog({ row, batchId, onClose, onSaved }) {
+interface FlatTag {
+  id: string
+  name: string
+  colour: string
+  parentId: string | null
+}
+
+interface Props {
+  row: ImportRow
+  batchId: string
+  onClose: () => void
+  onSaved?: () => void
+}
+
+export default function ImportRowDialog({ row, batchId, onClose, onSaved }: Props) {
   const [form, setForm] = useState({
     merchantResolved: row.merchantResolved ?? "",
     date: row.date ? new Date(row.date).toISOString().slice(0, 10) : "",
@@ -17,13 +33,13 @@ export default function ImportRowDialog({ row, batchId, onClose, onSaved }) {
     tagId: row.tagId ?? "",
     status: row.status ?? "pending",
   })
-  const [tags, setTags] = useState([])
+  const [tags, setTags] = useState<FlatTag[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
 
   useEffect(() => {
-    fetch("/api/tags").then(r => r.json()).then(tree => {
-      const flat = []
+    fetch("/api/tags").then(r => r.json()).then((tree: TagWithChildren[]) => {
+      const flat: FlatTag[] = []
       for (const p of tree) { flat.push(p); for (const c of p.children) flat.push(c) }
       setTags(flat)
     })
@@ -61,7 +77,7 @@ export default function ImportRowDialog({ row, batchId, onClose, onSaved }) {
     }
   }
 
-  const reasons = row.confidenceReasons ? JSON.parse(row.confidenceReasons) : []
+  const reasons: string[] = row.confidenceReasons ? JSON.parse(row.confidenceReasons) : []
 
   return (
     <Dialog open onOpenChange={onClose}>

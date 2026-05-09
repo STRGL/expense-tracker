@@ -5,7 +5,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { ChevronRight } from "lucide-react"
 
-const LABELS = {
+const LABELS: Record<string, string> = {
   dashboard: "Dashboard",
   transactions: "Transactions",
   imports: "Imports",

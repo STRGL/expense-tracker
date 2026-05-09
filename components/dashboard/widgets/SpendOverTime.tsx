@@ -3,27 +3,37 @@
 
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts"
 import WidgetContainer from "../WidgetContainer"
+import type { DashboardData } from "@/types/dashboard"
 
-function formatAmount(n) {
+function formatAmount(n: number) {
   return new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 0 }).format(n)
 }
 
-function formatPeriod(p) {
+function formatPeriod(p: string) {
   const [y, m] = p.split("-")
   return new Date(parseInt(y), parseInt(m) - 1, 1).toLocaleDateString("en-GB", { month: "short", year: "2-digit" })
 }
 
-function CustomTooltip({ active, payload, label }) {
-  if (!active || !payload?.length) return null
+interface TooltipPayloadItem {
+  value?: number
+}
+
+function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: TooltipPayloadItem[]; label?: string }) {
+  if (!active || !payload?.length || !label) return null
   return (
     <div className="bg-background border rounded-md px-2 py-1.5 text-xs shadow">
       <p className="font-medium">{formatPeriod(label)}</p>
-      <p>{formatAmount(payload[0].value)}</p>
+      <p>{formatAmount(payload[0].value ?? 0)}</p>
     </div>
   )
 }
 
-export default function SpendOverTime({ data, chartType = "bar" }) {
+interface Props {
+  data: DashboardData | null | undefined
+  chartType?: "bar" | "line"
+}
+
+export default function SpendOverTime({ data, chartType = "bar" }: Props) {
   const rawData = data?.spendOverTime ?? []
   const empty = rawData.length === 0
   const chartData = rawData.map(d => ({ period: d.period, amount: Math.round(d.amount * 100) / 100 }))
