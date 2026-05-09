@@ -19,8 +19,11 @@ jest.mock("@/lib/prisma", () => ({
     transaction: {
       create: jest.fn(),
       findUnique: jest.fn(),
+      findMany: jest.fn(),
+      findFirst: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
+      count: jest.fn(),
     },
     splitSuggestion: { deleteMany: jest.fn() },
     user: { findUnique: jest.fn() },
@@ -353,6 +356,122 @@ describe("PUT /api/transactions/[id]/my-split", () => {
     expect(prisma.transactionSplit.update).toHaveBeenCalledWith(
       expect.objectContaining({ data: { tagId: "t1" } })
     )
+  })
+})
+
+describe("POST /api/transactions — child creation", () => {
+  beforeEach(() => jest.clearAllMocks())
+
+  it("returns 404 when parent not found", async () => {
+    auth.mockResolvedValue(session)
+    prisma.transaction.findUnique.mockResolvedValue(null)
+    const req = new Request("http://localhost/api/transactions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        date: "2026-04-01",
+        merchantRaw: "AMAZON",
+        merchantName: "Headphones",
+        totalAmount: -50,
+        parentId: "missing",
+        splits: [{ userId: "u1", amount: -50, splitMethod: "equal", tagId: null }],
+      }),
+    })
+    const res = await POST(req)
+    expect(res.status).toBe(404)
+  })
+
+  it("returns 400 when parent already has a parentId (depth exceeded)", async () => {
+    auth.mockResolvedValue(session)
+    prisma.transaction.findUnique.mockResolvedValue({
+      id: "child1",
+      parentId: "grandparent",
+      createdById: "u1",
+      totalAmount: -100,
+      children: [],
+    })
+    const req = new Request("http://localhost/api/transactions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        date: "2026-04-01",
+        merchantRaw: "AMAZON",
+        merchantName: "Headphones",
+        totalAmount: -30,
+        parentId: "child1",
+        splits: [{ userId: "u1", amount: -30, splitMethod: "equal", tagId: null }],
+      }),
+    })
+    const res = await POST(req)
+    expect(res.status).toBe(400)
+  })
+
+  it("returns 400 when children would exceed parent total", async () => {
+    auth.mockResolvedValue(session)
+    prisma.transaction.findUnique.mockResolvedValue({
+      id: "parent1",
+      parentId: null,
+      createdById: "u1",
+      totalAmount: -100,
+      merchantRaw: "AMAZON",
+      children: [{ id: "c1", totalAmount: -80, isSystemLine: false }],
+    })
+    const req = new Request("http://localhost/api/transactions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        date: "2026-04-01",
+        merchantRaw: "AMAZON",
+        merchantName: "Keyboard",
+        totalAmount: -30,
+        parentId: "parent1",
+        splits: [{ userId: "u1", amount: -30, splitMethod: "equal", tagId: null }],
+      }),
+    })
+    const res = await POST(req)
+    expect(res.status).toBe(400)
+  })
+
+  it("creates child transaction and returns 201", async () => {
+    auth.mockResolvedValue(session)
+    const mockParent = {
+      id: "parent1",
+      parentId: null,
+      createdById: "u1",
+      totalAmount: -100,
+      merchantRaw: "AMAZON",
+      children: [],
+    }
+    prisma.transaction.findUnique.mockResolvedValue(mockParent)
+    prisma.$transaction.mockImplementation(async (cb: (tx: any) => Promise<any>) => cb({
+      transaction: {
+        create: jest.fn().mockResolvedValue({ id: "child1", merchantName: "Headphones" }),
+        findUnique: jest.fn().mockResolvedValue({ ...mockParent, splits: [], children: [] }),
+        findFirst: jest.fn().mockResolvedValue(null),
+        findMany: jest.fn().mockResolvedValue([]),
+        update: jest.fn(),
+        delete: jest.fn(),
+        count: jest.fn().mockResolvedValue(0),
+      },
+      transactionSplit: { create: jest.fn(), deleteMany: jest.fn() },
+      notification: { create: jest.fn() },
+      user: { findUnique: jest.fn() },
+    }))
+
+    const req = new Request("http://localhost/api/transactions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        date: "2026-04-01",
+        merchantRaw: "AMAZON",
+        merchantName: "Headphones",
+        totalAmount: -50,
+        parentId: "parent1",
+        splits: [{ userId: "u1", amount: -50, splitMethod: "equal", tagId: null }],
+      }),
+    })
+    const res = await POST(req)
+    expect(res.status).toBe(201)
   })
 })
 

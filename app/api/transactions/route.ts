@@ -3,6 +3,7 @@ import { NextResponse } from "next/server"
 import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/api-helpers"
+import { upsertSystemLine, applyDistributeCost } from "@/lib/itemisation"
 
 export const dynamic = "force-dynamic"
 
@@ -91,7 +92,7 @@ export async function POST(request: Request) {
   const { session, error } = await requireAuth()
   if (error) return error
 
-  const { date, merchantRaw, merchantName, totalAmount, notes, splits } = await request.json()
+  const { date, merchantRaw, merchantName, totalAmount, notes, splits, parentId, distributeCost } = await request.json()
 
   if (!date || !merchantRaw || !merchantName || totalAmount == null) {
     return NextResponse.json(
@@ -100,53 +101,87 @@ export async function POST(request: Request) {
     )
   }
 
-  if (!splits?.length) {
-    return NextResponse.json({ error: "At least one split is required" }, { status: 400 })
+  // Validate parent if creating a child
+  let parentTx: { merchantRaw: string; createdById: string } | null = null
+  if (parentId) {
+    const parent = await prisma.transaction.findUnique({
+      where: { id: parentId },
+      include: { children: { where: { isSystemLine: false } } },
+    })
+
+    if (!parent) {
+      return NextResponse.json({ error: "Parent transaction not found" }, { status: 404 })
+    }
+    if (parent.parentId) {
+      return NextResponse.json({ error: "Cannot nest children more than one level deep" }, { status: 400 })
+    }
+    if (parent.createdById !== session.user.id) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+
+    const existingChildSum = parent.children.reduce((s: number, c: { totalAmount: number }) => s + Math.abs(c.totalAmount), 0)
+    if (existingChildSum + Math.abs(Number(totalAmount)) > Math.abs(parent.totalAmount) + 0.005) {
+      return NextResponse.json({ error: "Child amounts would exceed parent total" }, { status: 400 })
+    }
+
+    parentTx = parent
   }
 
-  const isProportional = splits.every((s: { splitMethod: string }) => s.splitMethod === "proportional")
-  const splitSum = splits.reduce((sum: number, s: { amount: number }) => sum + s.amount, 0)
-  const isPending = isProportional && splitSum === 0 && splits.length > 1
+  // Validate splits (skip for distributeCost children — splits are auto-generated)
+  const isProportional = splits?.every((s: { splitMethod: string }) => s.splitMethod === "proportional") ?? false
+  const splitSum = splits?.reduce((sum: number, s: { amount: number }) => sum + s.amount, 0) ?? 0
+  const isPending = isProportional && splitSum === 0 && (splits?.length ?? 0) > 1
 
-  if (!isPending && Math.abs(splitSum - totalAmount) > 0.011) {
-    return NextResponse.json({ error: "Split amounts must sum to total amount" }, { status: 400 })
+  if (!distributeCost) {
+    if (!splits?.length) {
+      return NextResponse.json({ error: "At least one split is required" }, { status: 400 })
+    }
+    if (!isPending && Math.abs(splitSum - totalAmount) > 0.011) {
+      return NextResponse.json({ error: "Split amounts must sum to total amount" }, { status: 400 })
+    }
   }
 
   const transaction = await prisma.$transaction(async (tx) => {
     const t = await tx.transaction.create({
       data: {
         date: new Date(date),
-        merchantRaw: merchantRaw.trim(),
+        merchantRaw: parentId ? (parentTx?.merchantRaw ?? merchantRaw.trim()) : merchantRaw.trim(),
         merchantName: merchantName.trim(),
         totalAmount: Number(totalAmount),
         notes: notes?.trim() || null,
         createdById: session.user.id,
+        parentId: parentId ?? null,
+        distributeCost: distributeCost ?? false,
+        isSystemLine: false,
       },
     })
 
-    for (const split of splits) {
-      await tx.transactionSplit.create({
-        data: {
-          transactionId: t.id,
-          userId: split.userId,
-          amount: split.amount,
-          splitMethod: split.splitMethod,
-          tagId: split.tagId ?? null,
-          status: "active",
-        },
-      })
-      if (split.userId !== session.user.id) {
-        const user = await tx.user.findUnique({ where: { id: split.userId }, select: { wage: true } })
-        const type = isPending && user?.wage === null ? "missing_wage_for_split" : "split_created"
-        
-        await tx.notification.create({
+    if (!distributeCost && splits?.length) {
+      for (const split of splits) {
+        await tx.transactionSplit.create({
           data: {
-            userId: split.userId,
             transactionId: t.id,
-            type,
-            read: false,
+            userId: split.userId,
+            amount: split.amount,
+            splitMethod: split.splitMethod,
+            tagId: split.tagId ?? null,
+            status: "active",
           },
         })
+        if (split.userId !== session.user.id) {
+          const user = await tx.user.findUnique({ where: { id: split.userId }, select: { wage: true } })
+          const type = isPending && user?.wage === null ? "missing_wage_for_split" : "split_created"
+          await tx.notification.create({
+            data: { userId: split.userId, transactionId: t.id, type, read: false },
+          })
+        }
+      }
+    }
+
+    if (parentId) {
+      await upsertSystemLine(tx as any, parentId)
+      if (distributeCost) {
+        await applyDistributeCost(tx as any, t.id, parentId)
       }
     }
 
