@@ -10,7 +10,7 @@ export async function GET() {
   if (error) return error
 
   const tags = await prisma.tag.findMany({
-    where: { OR: [{ isShared: true }, { createdById: session.user.id }] },
+    where: { createdById: session.user.id },
     orderBy: [{ parentId: "asc" }, { name: "asc" }],
   })
 
@@ -21,7 +21,7 @@ export async function POST(request: Request) {
   const { session, error } = await requireAuth()
   if (error) return error
 
-  const { name, colour, parentId, isShared } = await request.json()
+  const { name, colour, parentId } = await request.json()
 
   if (!name?.trim()) {
     return NextResponse.json({ error: "Name is required" }, { status: 400 })
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
       name: name.trim(),
       colour: colour ?? "#6b7280",
       parentId: parentId ?? null,
-      isShared: isShared ?? false,
+      isShared: false,
       createdById: session.user.id,
     },
   })

@@ -54,7 +54,6 @@ interface TagChild {
   id: string
   name: string
   colour: string
-  isShared: boolean
   parentId: string | null
 }
 
@@ -69,14 +68,13 @@ type DialogState =
 interface FormState {
   name: string
   colour: string
-  isShared: boolean
   parentId?: string | null
 }
 
 export default function TagManager() {
   const [tree, setTree] = useState<TagParent[]>([])
   const [dialog, setDialog] = useState<DialogState | null>(null)
-  const [form, setForm] = useState<FormState>({ name: "", colour: "#6b7280", isShared: false })
+  const [form, setForm] = useState<FormState>({ name: "", colour: "#6b7280" })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
 
@@ -89,13 +87,13 @@ export default function TagManager() {
   }
 
   function openCreate(parentId: string | null = null) {
-    setForm({ name: "", colour: "#6b7280", isShared: false, parentId })
+    setForm({ name: "", colour: "#6b7280", parentId })
     setDialog({ mode: "create" })
     setError("")
   }
 
   function openEdit(tag: TagChild | TagParent) {
-    setForm({ name: tag.name, colour: tag.colour, isShared: tag.isShared })
+    setForm({ name: tag.name, colour: tag.colour })
     setDialog({ mode: "edit", tag })
     setError("")
   }
@@ -128,7 +126,7 @@ export default function TagManager() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          Shared tags are visible to all users. Private tags are yours only.
+          Your personal tags — visible only to you.
         </p>
         <Button size="sm" onClick={() => openCreate()}>Add category</Button>
       </div>
@@ -147,11 +145,6 @@ export default function TagManager() {
                   style={{ backgroundColor: parent.colour }}
                 />
                 <CardTitle className="text-sm font-medium">{parent.name}</CardTitle>
-                {parent.isShared ? (
-                  <Badge variant="secondary" className="text-xs">Shared</Badge>
-                ) : (
-                  <Badge variant="outline" className="text-xs">Private</Badge>
-                )}
               </div>
               <div className="flex gap-1">
                 <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => openCreate(parent.id)}>
@@ -182,11 +175,6 @@ export default function TagManager() {
                         style={{ backgroundColor: child.colour }}
                       />
                       <span className="text-sm">{child.name}</span>
-                      {child.isShared ? (
-                        <Badge variant="secondary" className="text-xs">Shared</Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-xs">Private</Badge>
-                      )}
                     </div>
                     <div className="flex gap-1">
                       <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => openEdit(child)}>Edit</Button>
@@ -226,18 +214,6 @@ export default function TagManager() {
             <div className="space-y-1.5">
               <Label>Colour</Label>
               <ColourPicker value={form.colour} onChange={(c: string) => setForm({ ...form, colour: c })} />
-            </div>
-            <div className="flex items-center gap-2">
-              <input
-                id="isShared"
-                type="checkbox"
-                checked={form.isShared}
-                onChange={(e) => setForm({ ...form, isShared: e.target.checked })}
-                className="h-4 w-4"
-              />
-              <Label htmlFor="isShared" className="font-normal cursor-pointer">
-                Shared (visible to all users)
-              </Label>
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
           </div>

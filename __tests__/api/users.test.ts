@@ -14,6 +14,8 @@ jest.mock("@/lib/prisma", () => ({
       create: jest.fn(),
       update: jest.fn(),
     },
+    tag: { createMany: jest.fn() },
+    $transaction: jest.fn(),
   },
 }))
 jest.mock("@/lib/auth-utils", () => ({
@@ -76,7 +78,11 @@ describe("POST /api/users (admin only)", () => {
   it("creates a user and returns 201 for admin", async () => {
     auth.mockResolvedValue(adminSession)
     prisma.user.findUnique.mockResolvedValue(null)
-    prisma.user.create.mockResolvedValue({ id: "u2", name: "Bob", email: "bob@test.com", role: "user", isActive: true })
+    const mockCreated = { id: "u2", name: "Bob", email: "bob@test.com", role: "user", isActive: true }
+    prisma.$transaction.mockImplementation(async (cb: (tx: typeof prisma) => Promise<unknown>) => cb({
+      user: { create: jest.fn().mockResolvedValue(mockCreated) },
+      tag: { createMany: jest.fn() },
+    }))
     const req = new Request("http://localhost/api/users", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

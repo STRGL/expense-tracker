@@ -25,11 +25,10 @@ export async function PUT(
   const { tag, error } = await getOwnedTag(id, session.user.id)
   if (error) return error
 
-  const { name, colour, isShared } = await request.json()
+  const { name, colour } = await request.json()
   const data: Prisma.TagUpdateInput = {}
   if (name?.trim()) data.name = name.trim()
   if (colour) data.colour = colour
-  if (isShared !== undefined) data.isShared = isShared
 
   const updated = await prisma.tag.update({ where: { id: tag.id }, data })
   return NextResponse.json(updated)

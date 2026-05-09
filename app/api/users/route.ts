@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { hashPassword } from "@/lib/auth-utils"
 import { requireAdmin } from "@/lib/api-helpers"
+import { DEFAULT_TAGS } from "@/lib/default-tags"
 
 export const dynamic = "force-dynamic"
 
@@ -27,9 +28,15 @@ export async function POST(request: Request) {
   const existing = await prisma.user.findUnique({ where: { email: email.trim().toLowerCase() } })
   if (existing) return NextResponse.json({ error: "Email already in use" }, { status: 409 })
   const passwordHash = await hashPassword(password)
-  const user = await prisma.user.create({
-    data: { name: name.trim(), email: email.trim().toLowerCase(), passwordHash, role: "user" },
-    select: USER_SELECT,
+  const user = await prisma.$transaction(async (tx) => {
+    const created = await tx.user.create({
+      data: { name: name.trim(), email: email.trim().toLowerCase(), passwordHash, role: "user" },
+      select: USER_SELECT,
+    })
+    await tx.tag.createMany({
+      data: DEFAULT_TAGS.map(t => ({ ...t, createdById: created.id, isShared: false })),
+    })
+    return created
   })
   return NextResponse.json(user, { status: 201 })
 }
