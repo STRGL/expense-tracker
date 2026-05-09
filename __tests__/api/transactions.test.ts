@@ -221,6 +221,106 @@ describe("DELETE /api/transactions/[id]", () => {
   })
 })
 
+describe("GET /api/transactions/[id] — paymentFromUserId", () => {
+  beforeEach(() => jest.clearAllMocks())
+
+  it("includes paymentFromUserId and paymentFrom in response", async () => {
+    auth.mockResolvedValue(session)
+    prisma.transaction.findUnique.mockResolvedValue({
+      id: "tx1",
+      date: new Date("2026-04-01"),
+      merchantName: "Bank Transfer",
+      merchantRaw: "BACS PAYMENT",
+      totalAmount: 200,
+      notes: null,
+      createdById: "u1",
+      importBatchId: null,
+      paymentFromUserId: "u2",
+      paymentFrom: { id: "u2", name: "Jane" },
+      splits: [{ id: "sp1", userId: "u1", amount: 200, status: "active", tagId: null, splitMethod: "equal", tag: null }],
+    })
+    const req = new Request("http://localhost/api/transactions/tx1")
+    const { params } = { params: Promise.resolve({ id: "tx1" }) }
+    const res = await GET_DETAIL(req, { params })
+    const body = await res.json()
+    expect(res.status).toBe(200)
+    expect(body.paymentFromUserId).toBe("u2")
+    expect(body.paymentFrom).toEqual({ id: "u2", name: "Jane" })
+  })
+})
+
+describe("PUT /api/transactions/[id] — paymentFromUserId", () => {
+  beforeEach(() => jest.clearAllMocks())
+
+  it("saves paymentFromUserId when provided", async () => {
+    auth.mockResolvedValue(session)
+    const mockTx = {
+      id: "tx1",
+      date: new Date("2026-04-01"),
+      merchantName: "Bank Transfer",
+      merchantRaw: "BACS",
+      totalAmount: 200,
+      notes: null,
+      createdById: "u1",
+      importBatchId: null,
+      paymentFromUserId: null,
+      paymentFrom: null,
+      splits: [{ id: "sp1", userId: "u1", amount: 200, status: "active", tagId: null, splitMethod: "equal", tag: null }],
+    }
+    prisma.transaction.findUnique.mockResolvedValue(mockTx)
+    prisma.$transaction.mockImplementation((cb: (tx: typeof prisma) => Promise<unknown>) => cb(prisma))
+    prisma.transaction.update.mockResolvedValue({ ...mockTx, paymentFromUserId: "u2" })
+
+    const req = new Request("http://localhost/api/transactions/tx1", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ paymentFromUserId: "u2" }),
+    })
+    const { params } = { params: Promise.resolve({ id: "tx1" }) }
+    const res = await PUT(req, { params })
+    expect(res.status).toBe(200)
+    expect(prisma.transaction.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ paymentFromUserId: "u2" }),
+      })
+    )
+  })
+
+  it("clears paymentFromUserId when null is passed", async () => {
+    auth.mockResolvedValue(session)
+    const mockTx = {
+      id: "tx1",
+      date: new Date("2026-04-01"),
+      merchantName: "Bank Transfer",
+      merchantRaw: "BACS",
+      totalAmount: 200,
+      notes: null,
+      createdById: "u1",
+      importBatchId: null,
+      paymentFromUserId: "u2",
+      paymentFrom: { id: "u2", name: "Jane" },
+      splits: [{ id: "sp1", userId: "u1", amount: 200, status: "active", tagId: null, splitMethod: "equal", tag: null }],
+    }
+    prisma.transaction.findUnique.mockResolvedValue(mockTx)
+    prisma.$transaction.mockImplementation((cb: (tx: typeof prisma) => Promise<unknown>) => cb(prisma))
+    prisma.transaction.update.mockResolvedValue({ ...mockTx, paymentFromUserId: null })
+
+    const req = new Request("http://localhost/api/transactions/tx1", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ paymentFromUserId: null }),
+    })
+    const { params } = { params: Promise.resolve({ id: "tx1" }) }
+    const res = await PUT(req, { params })
+    expect(res.status).toBe(200)
+    expect(prisma.transaction.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ paymentFromUserId: null }),
+      })
+    )
+  })
+})
+
 describe("PUT /api/transactions/[id]/my-split", () => {
   beforeEach(() => jest.clearAllMocks())
 

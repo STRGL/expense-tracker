@@ -13,6 +13,7 @@ async function getAccessibleTransaction(id: string, userId: string) {
       splits: {
         include: { tag: { select: { id: true, name: true, colour: true } } },
       },
+      paymentFrom: { select: { id: true, name: true } },
     },
   })
   if (!transaction) {
@@ -48,6 +49,8 @@ export async function GET(
     notes: transaction.notes,
     createdById: transaction.createdById,
     importBatchId: transaction.importBatchId,
+    paymentFromUserId: transaction.paymentFromUserId,
+    paymentFrom: transaction.paymentFrom,
     isOwner,
     mySplit: userSplit ?? null,
     splits: isOwner
@@ -68,13 +71,16 @@ export async function PUT(
   if (error) return error
   if (!isOwner) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
 
-  const { date, merchantRaw, merchantName, totalAmount, notes, splits } = await request.json()
+  const { date, merchantRaw, merchantName, totalAmount, notes, splits, paymentFromUserId } = await request.json()
   const data: Prisma.TransactionUpdateInput = {}
   if (date) data.date = new Date(date)
   if (merchantRaw?.trim()) data.merchantRaw = merchantRaw.trim()
   if (merchantName?.trim()) data.merchantName = merchantName.trim()
   if (totalAmount != null) data.totalAmount = Number(totalAmount)
   if (notes !== undefined) data.notes = notes?.trim() || null
+  if (paymentFromUserId !== undefined) {
+    data.paymentFromUserId = paymentFromUserId ?? null
+  }
 
   const updated = await prisma.$transaction(async (tx) => {
     const t = await tx.transaction.update({ where: { id }, data })
