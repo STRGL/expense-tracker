@@ -116,6 +116,19 @@ describe("GET /api/dashboard", () => {
       })
     )
   })
+
+  it("excludes parent transactions that have real children from calculations", async () => {
+    auth.mockResolvedValue(session)
+    prisma.transactionSplit.findMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+    const req = new Request("http://localhost/api/dashboard?dateFrom=2026-04-01&dateTo=2026-04-30")
+    await GET(req)
+    const call = (prisma.transactionSplit.findMany as jest.Mock).mock.calls[0][0]
+    expect(call.where.transaction).toBeDefined()
+    expect(call.where.transaction.isSystemLine).toBe(false)
+    expect(call.where.transaction.OR).toBeDefined()
+  })
 })
 
 describe("GET /api/dashboard/config", () => {

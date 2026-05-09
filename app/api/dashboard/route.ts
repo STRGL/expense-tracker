@@ -24,7 +24,18 @@ export async function GET(request: Request) {
   const prevDateFrom = new Date(dateFrom.getTime() - duration - 1)
   const prevDateTo = new Date(dateFrom.getTime() - 1)
 
-  const splitQuery = { userId: session.user.id, status: "active", hiddenAt: null }
+  const splitQuery = {
+    userId: session.user.id,
+    status: "active",
+    hiddenAt: null,
+    transaction: {
+      isSystemLine: false,
+      OR: [
+        { parentId: null, children: { none: { isSystemLine: false } } },
+        { parentId: { not: null } },
+      ],
+    },
+  }
   const splitInclude = {
     transaction: { select: { id: true, date: true, merchantName: true, totalAmount: true } },
     tag: { select: { id: true, name: true, colour: true, parentId: true } },
@@ -32,11 +43,11 @@ export async function GET(request: Request) {
 
   const [splits, prevSplits] = await Promise.all([
     prisma.transactionSplit.findMany({
-      where: { ...splitQuery, transaction: { date: { gte: dateFrom, lte: dateTo } } },
+      where: { ...splitQuery, transaction: { ...splitQuery.transaction, date: { gte: dateFrom, lte: dateTo } } },
       include: splitInclude,
     }),
     prisma.transactionSplit.findMany({
-      where: { ...splitQuery, transaction: { date: { gte: prevDateFrom, lte: prevDateTo } } },
+      where: { ...splitQuery, transaction: { ...splitQuery.transaction, date: { gte: prevDateFrom, lte: prevDateTo } } },
       include: splitInclude,
     }),
   ])
