@@ -3,6 +3,7 @@ import { NextResponse } from "next/server"
 import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/api-helpers"
+import { upsertSystemLine } from "@/lib/itemisation"
 
 export const dynamic = "force-dynamic"
 
@@ -127,6 +128,22 @@ export async function PUT(
               read: false,
             },
           })
+        }
+      }
+    }
+
+    // Recalculate system line if amount changed
+    if (totalAmount != null) {
+      if (transaction.parentId) {
+        // This is a child — recalculate parent's system line
+        await upsertSystemLine(tx as any, transaction.parentId)
+      } else {
+        // This may be a parent — check for real children
+        const childCount = await tx.transaction.count({
+          where: { parentId: id, isSystemLine: false },
+        })
+        if (childCount > 0) {
+          await upsertSystemLine(tx as any, id)
         }
       }
     }

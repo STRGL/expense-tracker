@@ -359,6 +359,69 @@ describe("PUT /api/transactions/[id]/my-split", () => {
   })
 })
 
+describe("PUT /api/transactions/[id] — system line recalculation", () => {
+  beforeEach(() => jest.clearAllMocks())
+
+  it("calls upsertSystemLine when child amount changes", async () => {
+    auth.mockResolvedValue(session)
+    const mockChild = {
+      id: "child1",
+      merchantName: "Headphones",
+      merchantRaw: "AMAZON",
+      totalAmount: -50,
+      notes: null,
+      createdById: "u1",
+      importBatchId: null,
+      paymentFromUserId: null,
+      paymentFrom: null,
+      parentId: "parent1",
+      isSystemLine: false,
+      distributeCost: false,
+      splits: [{ id: "sp1", userId: "u1", amount: -50, status: "active", hiddenAt: null, tag: null }],
+      children: [],
+    }
+    prisma.transaction.findUnique.mockResolvedValue(mockChild)
+    const txMock = {
+      transaction: {
+        update: jest.fn().mockResolvedValue(mockChild),
+        findUnique: jest.fn().mockResolvedValue({
+          id: "parent1",
+          date: new Date(),
+          merchantRaw: "AMAZON",
+          merchantName: "Amazon",
+          totalAmount: -100,
+          createdById: "u1",
+          splits: [{ id: "sp1", userId: "u1", amount: -100, splitMethod: "equal", status: "active", hiddenAt: null }],
+          children: [{ id: "child1", totalAmount: -60, isSystemLine: false }],
+        }),
+        findFirst: jest.fn().mockResolvedValue(null),
+        findMany: jest.fn().mockResolvedValue([]),
+        create: jest.fn().mockResolvedValue({ id: "sys1" }),
+        delete: jest.fn(),
+        count: jest.fn().mockResolvedValue(0),
+      },
+      transactionSplit: {
+        deleteMany: jest.fn().mockResolvedValue({}),
+        create: jest.fn().mockResolvedValue({}),
+      },
+      notification: { create: jest.fn() },
+    }
+    prisma.$transaction.mockImplementation(async (cb: (tx: any) => Promise<any>) => cb(txMock))
+
+    const req = new Request("http://localhost/api/transactions/child1", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ totalAmount: -60 }),
+    })
+    const res = await PUT(req, { params: Promise.resolve({ id: "child1" }) })
+    expect(res.status).toBe(200)
+    // upsertSystemLine called — confirmed by findUnique being called with parent1 inside $transaction
+    expect(txMock.transaction.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: "parent1" } })
+    )
+  })
+})
+
 describe("GET /api/transactions/[id] — children", () => {
   beforeEach(() => jest.clearAllMocks())
 
