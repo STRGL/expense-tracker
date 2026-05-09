@@ -359,6 +359,46 @@ describe("PUT /api/transactions/[id]/my-split", () => {
   })
 })
 
+describe("GET /api/transactions/[id] — children", () => {
+  beforeEach(() => jest.clearAllMocks())
+
+  it("returns children and systemLine in response", async () => {
+    auth.mockResolvedValue(session)
+    prisma.transaction.findUnique.mockResolvedValue({
+      id: "tx1",
+      date: new Date("2026-04-01"),
+      merchantName: "Amazon",
+      merchantRaw: "AMAZON",
+      totalAmount: -100,
+      notes: null,
+      createdById: "u1",
+      importBatchId: null,
+      paymentFromUserId: null,
+      paymentFrom: null,
+      parentId: null,
+      isSystemLine: false,
+      distributeCost: false,
+      splits: [{ id: "sp1", userId: "u1", amount: -100, status: "active", hiddenAt: null, tag: null }],
+      children: [
+        { id: "c1", merchantName: "Headphones", totalAmount: -60, isSystemLine: false, distributeCost: false, splits: [] },
+        { id: "sys1", merchantName: "Other", totalAmount: -40, isSystemLine: true, distributeCost: false, splits: [] },
+      ],
+    })
+
+    const req = new Request("http://localhost/api/transactions/tx1")
+    const res = await GET_DETAIL(req, { params: Promise.resolve({ id: "tx1" }) })
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body.children).toHaveLength(1)
+    expect(body.children[0].id).toBe("c1")
+    expect(body.systemLine).not.toBeNull()
+    expect(body.systemLine.id).toBe("sys1")
+    expect(body.parentId).toBeNull()
+    expect(body.isSystemLine).toBe(false)
+  })
+})
+
 describe("POST /api/transactions — child creation", () => {
   beforeEach(() => jest.clearAllMocks())
 

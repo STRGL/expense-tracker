@@ -14,6 +14,10 @@ async function getAccessibleTransaction(id: string, userId: string) {
         include: { tag: { select: { id: true, name: true, colour: true } } },
       },
       paymentFrom: { select: { id: true, name: true } },
+      children: {
+        include: { splits: { where: { status: "active" } } },
+        orderBy: { createdAt: "asc" },
+      },
     },
   })
   if (!transaction) {
@@ -40,6 +44,10 @@ export async function GET(
   const { transaction, userSplit, isOwner, error } = await getAccessibleTransaction(id, session.user.id)
   if (error) return error
 
+  const allChildren = transaction.children ?? []
+  const realChildren = allChildren.filter((c) => !c.isSystemLine)
+  const systemLine = allChildren.find((c) => c.isSystemLine) ?? null
+
   return NextResponse.json({
     id: transaction.id,
     date: transaction.date,
@@ -51,11 +59,16 @@ export async function GET(
     importBatchId: transaction.importBatchId,
     paymentFromUserId: transaction.paymentFromUserId,
     paymentFrom: transaction.paymentFrom,
+    parentId: transaction.parentId,
+    isSystemLine: transaction.isSystemLine,
+    distributeCost: transaction.distributeCost,
     isOwner,
     mySplit: userSplit ?? null,
     splits: isOwner
       ? transaction.splits
       : transaction.splits.filter((s) => s.userId === session.user.id),
+    children: realChildren,
+    systemLine,
   })
 }
 
