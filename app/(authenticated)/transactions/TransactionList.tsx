@@ -330,8 +330,8 @@ export default function TransactionList({ onReload: _onReload }: Props = {}) {
                       </td>
                       <td className="px-3 py-2.5 font-medium max-w-[200px] truncate">
                         {tx.merchantName}
-                        {tx.parentId && (
-                          <span className="ml-1.5 text-xs text-muted-foreground font-normal">line item</span>
+                        {tx.myAmount === 0 && tx.splitMethod === "proportional" && (
+                          <span className="ml-1 text-xs text-muted-foreground font-normal">(Pending)</span>
                         )}
                       </td>
                       <td className="px-3 py-2.5">
@@ -348,11 +348,7 @@ export default function TransactionList({ onReload: _onReload }: Props = {}) {
                         )}
                       </td>
                       <td className="px-3 py-2.5 text-right font-medium tabular-nums">
-                        {tx.myAmount === 0 && tx.splitMethod === "proportional" ? (
-                          <span className="text-xs text-muted-foreground italic">Pending</span>
-                        ) : (
-                          <AmountCell amount={tx.myAmount} />
-                        )}
+                        <AmountCell amount={tx.myAmount} />
                       </td>
                       <td className="px-3 py-2.5 text-right text-muted-foreground tabular-nums">
                         {tx.splitCount > 1 ? (

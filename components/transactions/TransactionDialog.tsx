@@ -254,6 +254,9 @@ export default function TransactionDialog({ transaction, onClose, onSaved }: Pro
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {detail.merchantName}
+            {detail.splits.some(s => s.splitMethod === "proportional" && s.amount === 0) && (
+              <Badge variant="outline" className="text-xs font-normal text-muted-foreground">Pending</Badge>
+            )}
             {!isOwner && (
               <Badge variant="outline" className="text-xs font-normal">Shared with you</Badge>
             )}
@@ -295,11 +298,7 @@ export default function TransactionDialog({ transaction, onClose, onSaved }: Pro
                     <span className={s.userId === userId ? "font-medium" : "text-muted-foreground"}>
                       {s.userId === userId ? "You" : (s.userName ?? s.userId)}
                     </span>
-                    {s.amount === 0 && s.splitMethod === "proportional" ? (
-                      <span className="text-xs text-muted-foreground italic">Pending</span>
-                    ) : (
-                      <span className="tabular-nums">{formatAmount(s.amount)}</span>
-                    )}
+                    <span className="tabular-nums">{formatAmount(s.amount)}</span>
                   </div>
                 ))}
               </div>

@@ -68,9 +68,17 @@ export async function GET(
     distributeCost: transaction.distributeCost,
     isOwner,
     mySplit: userSplit ?? null,
-    splits: isOwner
+    splits: (isOwner
       ? transaction.splits
-      : transaction.splits.filter((s) => s.userId === session.user.id),
+      : transaction.splits.filter((s) => s.userId === session.user.id)
+    ).map((s) => ({
+      id: s.id,
+      userId: s.userId,
+      userName: s.user?.name ?? null,
+      amount: s.amount,
+      splitMethod: s.splitMethod,
+      tagId: s.tagId,
+    })),
     children: realChildren,
     systemLine,
   })
