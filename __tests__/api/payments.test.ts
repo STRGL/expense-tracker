@@ -2,14 +2,14 @@
  * @jest-environment node
  */
 import { GET } from "@/app/api/payments/route"
-import { GET as GET_PERSON } from "@/app/api/payments/[userId]/route"
+import { GET as GET_PERSON } from "@/app/api/payments/[slug]/route"
 
 jest.mock("@/auth", () => ({ auth: jest.fn() }))
 jest.mock("@/lib/prisma", () => ({
   prisma: {
     transactionSplit: { findMany: jest.fn() },
     transaction: { findMany: jest.fn() },
-    user: { findUnique: jest.fn() },
+    user: { findUnique: jest.fn(), findMany: jest.fn().mockResolvedValue([{ id: "u2", name: "Jane" }]) },
   },
 }))
 
@@ -77,14 +77,14 @@ describe("GET /api/payments/[userId]", () => {
 
   it("returns 401 when not authenticated", async () => {
     auth.mockResolvedValue(null)
-    const params = Promise.resolve({ userId: "u2" })
+    const params = Promise.resolve({ slug: "u2" })
     const res = await GET_PERSON({} as Request, { params })
     expect(res.status).toBe(401)
   })
 
   it("returns 400 when userId is own user", async () => {
     auth.mockResolvedValue(session)
-    const params = Promise.resolve({ userId: "u1" })
+    const params = Promise.resolve({ slug: "u1" })
     const res = await GET_PERSON({} as Request, { params })
     expect(res.status).toBe(400)
   })
@@ -111,7 +111,7 @@ describe("GET /api/payments/[userId]", () => {
       { id: "tx3", merchantName: "Bank Transfer", date: new Date("2026-04-10"), totalAmount: 20 },
     ])
 
-    const params = Promise.resolve({ userId: "u2" })
+    const params = Promise.resolve({ slug: "u2" })
     const res = await GET_PERSON({} as Request, { params })
     const body = await res.json()
     expect(res.status).toBe(200)

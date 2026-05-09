@@ -3,6 +3,7 @@
 export interface PaymentUserSummary {
   userId: string
   name: string
+  slug: string
   isActive: boolean
   net: number
   owedByThem: number

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/api-helpers"
 import type { PaymentUserSummary } from "@/types/payments"
+import { generateUserSlugs } from "@/lib/slug"
 
 export const dynamic = "force-dynamic"
 
@@ -68,20 +69,19 @@ export async function GET() {
     paidByThem[otherId] = (paidByThem[otherId] ?? 0) + Math.abs(txn.totalAmount)
   }
 
-  const summaries: PaymentUserSummary[] = Object.entries(users).map(([id, meta]) => {
+  const summaryList = Object.entries(users).map(([id, meta]) => {
     const owed = owedByThem[id] ?? 0
     const iOwe = owedByMe[id] ?? 0
     const paid = paidByThem[id] ?? 0
-    return {
-      userId: id,
-      name: meta.name,
-      isActive: meta.isActive,
-      owedByThem: owed,
-      owedByMe: iOwe,
-      paidByThem: paid,
-      net: owed - iOwe - paid,
-    }
+    return { userId: id, name: meta.name, isActive: meta.isActive, owedByThem: owed, owedByMe: iOwe, paidByThem: paid, net: owed - iOwe - paid }
   })
+
+  const slugMap = generateUserSlugs(summaryList.map(s => ({ id: s.userId, name: s.name })))
+
+  const summaries: PaymentUserSummary[] = summaryList.map(s => ({
+    ...s,
+    slug: slugMap.get(s.userId) ?? s.userId,
+  }))
 
   return NextResponse.json(summaries)
 }

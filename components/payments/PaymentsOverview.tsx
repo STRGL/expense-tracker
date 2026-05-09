@@ -41,7 +41,7 @@ export default function PaymentsOverview() {
         return (
           <Link
             key={s.userId}
-            href={`/payments/${s.userId}`}
+            href={`/payments/${s.slug}`}
             className="block rounded-lg border bg-card p-4 hover:bg-accent transition-colors"
           >
             <div className="flex items-center justify-between mb-2">

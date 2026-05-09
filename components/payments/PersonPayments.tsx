@@ -15,21 +15,21 @@ function formatDate(d: string) {
 }
 
 interface Props {
-  userId: string
+  slug: string
 }
 
-export default function PersonPayments({ userId }: Props) {
+export default function PersonPayments({ slug }: Props) {
   const [detail, setDetail] = useState<PersonPaymentDetail | null>(null)
   const [notFound, setNotFound] = useState(false)
 
   useEffect(() => {
-    fetch(`/api/payments/${userId}`)
+    fetch(`/api/payments/${slug}`)
       .then(r => {
         if (r.status === 404) { setNotFound(true); return null }
         return r.json()
       })
       .then(data => { if (data) setDetail(data) })
-  }, [userId])
+  }, [slug])
 
   if (notFound) {
     return <p className="text-sm text-muted-foreground py-8 text-center">User not found.</p>

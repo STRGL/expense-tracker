@@ -8,9 +8,15 @@ const LABELS: Record<string, string> = {
   dashboard: "Dashboard",
   transactions: "Transactions",
   imports: "Imports",
+  payments: "Payments",
   settings: "Settings",
   admin: "Admin",
   search: "Search",
+}
+
+function formatSegment(segment: string): string {
+  if (LABELS[segment]) return LABELS[segment]
+  return segment.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")
 }
 
 export default function Breadcrumbs() {
@@ -26,7 +32,7 @@ export default function Breadcrumbs() {
       </Link>
       {segments.map((segment, index) => {
         const href = "/" + segments.slice(0, index + 1).join("/")
-        const label = LABELS[segment] ?? segment
+        const label = formatSegment(segment)
         const isLast = index === segments.length - 1
 
         return (
