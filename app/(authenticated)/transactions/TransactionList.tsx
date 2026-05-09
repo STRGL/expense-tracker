@@ -348,7 +348,11 @@ export default function TransactionList({ onReload: _onReload }: Props = {}) {
                         )}
                       </td>
                       <td className="px-3 py-2.5 text-right font-medium tabular-nums">
-                        <AmountCell amount={tx.myAmount} />
+                        {tx.myAmount === 0 && tx.splitMethod === "proportional" ? (
+                          <span className="text-xs text-muted-foreground italic">Pending</span>
+                        ) : (
+                          <AmountCell amount={tx.myAmount} />
+                        )}
                       </td>
                       <td className="px-3 py-2.5 text-right text-muted-foreground tabular-nums">
                         {tx.splitCount > 1 ? (

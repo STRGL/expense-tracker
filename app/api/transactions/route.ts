@@ -43,6 +43,7 @@ export async function GET(request: Request) {
     transaction: {
       ...txWhere,
       isSystemLine: false,
+      parentId: null,
     },
   } satisfies Prisma.TransactionSplitWhereInput
 
