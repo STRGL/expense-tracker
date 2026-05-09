@@ -40,11 +40,12 @@ describe("GET /api/dashboard", () => {
     expect(res.status).toBe(400)
   })
 
-  it("returns dashboard data with correct total spend", async () => {
+  it("returns dashboard data with correct totalIn, totalOut, balance", async () => {
     auth.mockResolvedValue(session)
     const currentSplits = [
       makeSplit(-100, "Groceries", "#22c55e", "Tesco", "2026-04-01"),
       makeSplit(-50, "Transport", "#3b82f6", "TfL", "2026-04-15"),
+      makeSplit(200, "Salary", "#a855f7", "Employer", "2026-04-01"),
     ]
     prisma.transactionSplit.findMany
       .mockResolvedValueOnce(currentSplits)
@@ -53,19 +54,48 @@ describe("GET /api/dashboard", () => {
     const res = await GET(req)
     const body = await res.json()
     expect(res.status).toBe(200)
-    expect(body.summary.totalSpend).toBeCloseTo(150, 2)
+    expect(body.summary.totalIn).toBeCloseTo(200, 2)
+    expect(body.summary.totalOut).toBeCloseTo(150, 2)
+    expect(body.summary.balance).toBeCloseTo(50, 2)
+    expect(body.summary.totalInChange).toBeNull()
+    expect(body.summary.totalOutChange).toBeNull()
+    expect(body.summary.balanceChange).toBeNull()
     expect(body.topMerchants).toHaveLength(2)
     expect(body.spendByTag).toHaveLength(2)
   })
 
-  it("returns empty arrays when no transactions in period", async () => {
+  it("computes period-over-period deltas when previous data exists", async () => {
+    auth.mockResolvedValue(session)
+    const currentSplits = [
+      makeSplit(-100, "Groceries", "#22c55e", "Tesco", "2026-04-01"),
+      makeSplit(200, "Salary", "#a855f7", "Employer", "2026-04-01"),
+    ]
+    const prevSplits = [
+      makeSplit(-50, "Groceries", "#22c55e", "Tesco", "2026-03-01"),
+      makeSplit(100, "Salary", "#a855f7", "Employer", "2026-03-01"),
+    ]
+    prisma.transactionSplit.findMany
+      .mockResolvedValueOnce(currentSplits)
+      .mockResolvedValueOnce(prevSplits)
+    const req = new Request("http://localhost/api/dashboard?dateFrom=2026-04-01&dateTo=2026-04-30")
+    const res = await GET(req)
+    const body = await res.json()
+    expect(res.status).toBe(200)
+    expect(body.summary.totalInChange).toBeCloseTo(100, 1)   // 200 vs 100 = +100%
+    expect(body.summary.totalOutChange).toBeCloseTo(100, 1)  // 100 vs 50 = +100%
+    expect(body.summary.balanceChange).toBeCloseTo(100, 1)   // balance 100 vs 50 = +100%
+  })
+
+  it("returns zeros when no transactions in period", async () => {
     auth.mockResolvedValue(session)
     prisma.transactionSplit.findMany.mockResolvedValue([])
     const req = new Request("http://localhost/api/dashboard?dateFrom=2026-04-01&dateTo=2026-04-30")
     const res = await GET(req)
     const body = await res.json()
     expect(res.status).toBe(200)
-    expect(body.summary.totalSpend).toBe(0)
+    expect(body.summary.totalIn).toBe(0)
+    expect(body.summary.totalOut).toBe(0)
+    expect(body.summary.balance).toBe(0)
     expect(body.topMerchants).toHaveLength(0)
     expect(body.topTransactions).toHaveLength(0)
   })

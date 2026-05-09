@@ -18,8 +18,12 @@ export interface DashboardConfig {
 }
 
 export interface DashboardSummary {
-  totalSpend: number
-  biggestTransaction: { amount: number; merchantName: string; date: string } | null
+  totalIn: number
+  totalOut: number
+  balance: number
+  totalInChange: number | null
+  totalOutChange: number | null
+  balanceChange: number | null
   mostUsedTag: { name: string; colour: string; count: number } | null
 }
 

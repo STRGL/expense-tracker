@@ -5,9 +5,16 @@ function formatAmount(n: number) {
   return new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(n)
 }
 
-function formatDate(d: string | Date | null | undefined) {
-  if (!d) return ""
-  return new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })
+function DeltaLine({ change, invert = false }: { change: number | null | undefined; invert?: boolean }) {
+  if (change == null) return <p className="text-xs text-muted-foreground">—</p>
+  const positive = change >= 0
+  const good = invert ? !positive : positive
+  const sign = positive ? "+" : "−"
+  return (
+    <p className={`text-xs ${good ? "text-green-600" : "text-red-600"}`}>
+      {sign}{Math.abs(change).toFixed(1)}% vs prev. period
+    </p>
+  )
 }
 
 interface Props {
@@ -15,24 +22,27 @@ interface Props {
 }
 
 export default function SummaryCards({ data }: Props) {
-  const { totalSpend, biggestTransaction, mostUsedTag } = data?.summary ?? {}
+  const { totalIn, totalOut, balance, totalInChange, totalOutChange, balanceChange, mostUsedTag } = data?.summary ?? {}
+  const hasData = totalIn != null || totalOut != null
   return (
-    <WidgetContainer title="Summary" empty={!totalSpend && totalSpend !== 0} insufficient={false}>
-      <div className="grid grid-cols-3 gap-3 h-full">
+    <WidgetContainer title="Summary" empty={!hasData} insufficient={false}>
+      <div className="grid grid-cols-4 gap-3 h-full">
         <div className="flex flex-col justify-center space-y-0.5">
-          <p className="text-xs text-muted-foreground">Total spend</p>
-          <p className="text-xl font-semibold tabular-nums">{formatAmount(totalSpend ?? 0)}</p>
+          <p className="text-xs text-muted-foreground">Total in</p>
+          <p className="text-2xl font-semibold tabular-nums">{formatAmount(totalIn ?? 0)}</p>
+          <DeltaLine change={totalInChange} />
         </div>
         <div className="flex flex-col justify-center space-y-0.5">
-          <p className="text-xs text-muted-foreground">Biggest transaction</p>
-          {biggestTransaction ? (
-            <>
-              <p className="text-xl font-semibold tabular-nums">{formatAmount(biggestTransaction.amount)}</p>
-              <p className="text-xs text-muted-foreground truncate">{biggestTransaction.merchantName} · {formatDate(biggestTransaction.date)}</p>
-            </>
-          ) : (
-            <p className="text-sm text-muted-foreground">—</p>
-          )}
+          <p className="text-xs text-muted-foreground">Total out</p>
+          <p className="text-2xl font-semibold tabular-nums">{formatAmount(totalOut ?? 0)}</p>
+          <DeltaLine change={totalOutChange} invert />
+        </div>
+        <div className="flex flex-col justify-center space-y-0.5">
+          <p className="text-xs text-muted-foreground">Balance</p>
+          <p className={`text-2xl font-semibold tabular-nums ${(balance ?? 0) >= 0 ? "text-green-600" : "text-red-600"}`}>
+            {formatAmount(balance ?? 0)}
+          </p>
+          <DeltaLine change={balanceChange} />
         </div>
         <div className="flex flex-col justify-center space-y-0.5">
           <p className="text-xs text-muted-foreground">Most used tag</p>

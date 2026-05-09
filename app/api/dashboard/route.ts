@@ -41,20 +41,20 @@ export async function GET(request: Request) {
     }),
   ])
 
-  // Sort splits by absolute amount for "Top Transactions" and "Biggest Transaction"
   const sortedSplits = [...splits].sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount))
 
   const outflowSplits = splits.filter(sp => sp.amount < 0)
+  const inflowSplits = splits.filter(sp => sp.amount > 0)
   const totalOutflow = Math.abs(outflowSplits.reduce((s, sp) => s + sp.amount, 0))
+  const totalInflow = inflowSplits.reduce((s, sp) => s + sp.amount, 0)
+  const balance = totalInflow - totalOutflow
 
-  const biggestSplit = sortedSplits[0] ?? null
-  const biggestTransaction = biggestSplit
-    ? { 
-        amount: biggestSplit.amount, 
-        merchantName: biggestSplit.transaction.merchantName, 
-        date: biggestSplit.transaction.date 
-      }
-    : null
+  const prevOutflow = Math.abs(prevSplits.filter(sp => sp.amount < 0).reduce((s, sp) => s + sp.amount, 0))
+  const prevInflow = prevSplits.filter(sp => sp.amount > 0).reduce((s, sp) => s + sp.amount, 0)
+  const prevBalance = prevInflow - prevOutflow
+
+  const pct = (current: number, previous: number) =>
+    previous !== 0 ? ((current - previous) / Math.abs(previous)) * 100 : null
 
   type TagInfo = { id: string; name: string; colour: string; parentId: string | null } | null
   type SplitWithTag = (typeof splits)[number]
@@ -152,7 +152,15 @@ export async function GET(request: Request) {
   }))
 
   return NextResponse.json({
-    summary: { totalSpend: totalOutflow, biggestTransaction, mostUsedTag },
+    summary: {
+      totalIn: totalInflow,
+      totalOut: totalOutflow,
+      balance,
+      totalInChange: pct(totalInflow, prevInflow),
+      totalOutChange: pct(totalOutflow, prevOutflow),
+      balanceChange: pct(balance, prevBalance),
+      mostUsedTag,
+    },
     spendByTag,
     spendOverTime,
     tagTrends: { increases, decreases },
