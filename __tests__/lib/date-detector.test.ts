@@ -1,4 +1,4 @@
-import { detectDateFormat, parseDate } from "@/lib/date-detector"
+import { detectDateFormat, parseDate, type DateFormat } from "@/lib/date-detector"
 
 describe("detectDateFormat", () => {
   it("returns null for empty input", () => {
@@ -31,7 +31,7 @@ describe("parseDate", () => {
   it("returns null for null/empty input", () => {
     expect(parseDate(null as unknown as string, "DD/MM/YYYY")).toBeNull()
     expect(parseDate("", "DD/MM/YYYY")).toBeNull()
-    expect(parseDate("01/01/2026", null as unknown as import("@/lib/date-detector").DateFormat)).toBeNull()
+    expect(parseDate("01/01/2026", null as unknown as DateFormat)).toBeNull()
   })
 
   it("parses DD/MM/YYYY correctly", () => {
