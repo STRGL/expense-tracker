@@ -45,6 +45,7 @@ const TYPE_LABELS: Record<string, string> = {
   split_updated: "Updated a split with you",
   split_removed: "Declined your split",
   transaction_deleted: "Deleted a transaction you were part of",
+  transaction_hidden: "Removed a shared transaction from their records",
   split_suggestion: "Suggested changes to a transaction",
   split_suggestion_response: "Responded to your suggestion",
   missing_wage_for_split: "Action required: Wage missing for split",
@@ -100,6 +101,36 @@ export default function NotificationItem({ notification, onAction }: Props) {
             onClick={() => { window.location.href = "/settings" }}
           >
             Update Profile
+          </Button>
+        </div>
+      )}
+
+      {/* Transaction hidden — remove or view actions */}
+      {notification.type === "transaction_hidden" && notification.transactionId && (
+        <div className="flex gap-2 pt-1 flex-wrap">
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs"
+            disabled={responding}
+            onClick={async () => {
+              setResponding(true)
+              await fetch(`/api/transactions/${notification.transactionId}/my-view`, {
+                method: "DELETE",
+              })
+              setResponding(false)
+              onAction?.()
+            }}
+          >
+            Remove from my history
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 text-xs"
+            onClick={() => { window.location.href = "/transactions" }}
+          >
+            View transactions
           </Button>
         </div>
       )}
