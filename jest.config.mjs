@@ -9,7 +9,7 @@ const config = {
     "^@/(.*)$": "<rootDir>/$1",
   },
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
-  testMatch: ["<rootDir>/__tests__/**/*.test.ts"],
+  testMatch: ["<rootDir>/__tests__/**/*.test.{ts,tsx}"],
 }
 
 export default createJestConfig(config)
