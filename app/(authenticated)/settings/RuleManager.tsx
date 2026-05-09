@@ -1,4 +1,3 @@
-// app/(authenticated)/settings/RuleManager.tsx
 "use client"
 
 import { useState, useEffect } from "react"
@@ -27,12 +26,9 @@ interface RuleRow {
   tag: { id: string; name: string; colour: string } | null
 }
 
-type DialogMode = "create" | "edit"
-
-interface DialogState {
-  mode: DialogMode
-  rule?: RuleRow
-}
+type DialogState =
+  | { mode: "create" }
+  | { mode: "edit"; rule: RuleRow }
 
 interface FormState {
   merchantPattern: string
@@ -49,7 +45,7 @@ export default function RuleManager() {
   const [error, setError] = useState("")
 
   useEffect(() => {
-    load()
+    void load()
     fetch("/api/tags")
       .then((r) => r.json())
       .then((tree: TagOption[]) => {
@@ -83,7 +79,7 @@ export default function RuleManager() {
     if (!dialog) return
     setSaving(true)
     setError("")
-    const url = dialog.mode === "edit" ? `/api/rules/${dialog.rule!.id}` : "/api/rules"
+    const url = dialog.mode === "edit" ? `/api/rules/${dialog.rule.id}` : "/api/rules"
     const method = dialog.mode === "edit" ? "PUT" : "POST"
     const res = await fetch(url, {
       method,

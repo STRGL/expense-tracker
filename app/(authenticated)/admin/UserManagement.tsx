@@ -17,12 +17,10 @@ interface UserRow {
   isActive: boolean
 }
 
-type DialogMode = "create" | "edit" | "password"
-
-interface DialogState {
-  mode: DialogMode
-  user?: UserRow
-}
+type DialogState =
+  | { mode: "create" }
+  | { mode: "edit"; user: UserRow }
+  | { mode: "password"; user: UserRow }
 
 interface FormState {
   name?: string
@@ -37,7 +35,7 @@ export default function UserManagement() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { void load() }, [])
 
   async function load() {
     const res = await fetch("/api/users")
@@ -73,10 +71,10 @@ export default function UserManagement() {
       url = "/api/users"
       method = "POST"
     } else if (dialog.mode === "edit") {
-      url = `/api/users/${dialog.user!.id}`
+      url = `/api/users/${dialog.user.id}`
       method = "PUT"
     } else {
-      url = `/api/users/${dialog.user!.id}/password`
+      url = `/api/users/${dialog.user.id}/password`
       method = "PUT"
     }
 
@@ -142,8 +140,8 @@ export default function UserManagement() {
           <DialogHeader>
             <DialogTitle>
               {dialog?.mode === "create" && "Create user"}
-              {dialog?.mode === "edit" && `Edit ${dialog.user?.name}`}
-              {dialog?.mode === "password" && `Reset password for ${dialog.user?.name}`}
+              {dialog?.mode === "edit" && `Edit ${dialog.user.name}`}
+              {dialog?.mode === "password" && `Reset password for ${dialog.user.name}`}
             </DialogTitle>
           </DialogHeader>
 

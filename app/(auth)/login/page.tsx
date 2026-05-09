@@ -1,4 +1,3 @@
-// app/(auth)/login/page.js
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"

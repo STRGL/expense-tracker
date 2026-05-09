@@ -25,7 +25,7 @@ export interface TransactionListItem {
   splitMethod: string
   splitCount: number
   importBatchId: string | null
-  confidenceLevel: ConfidenceLevel | null | undefined
+  confidenceLevel?: ConfidenceLevel
 }
 
 export interface SplitInput {

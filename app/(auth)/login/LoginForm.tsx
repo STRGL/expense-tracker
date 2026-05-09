@@ -1,4 +1,3 @@
-// app/(auth)/login/LoginForm.js
 "use client"
 
 import { useState } from "react"

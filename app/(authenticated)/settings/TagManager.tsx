@@ -1,4 +1,3 @@
-// app/(authenticated)/settings/TagManager.tsx
 "use client"
 
 import { useState, useEffect } from "react"
@@ -63,12 +62,9 @@ interface TagParent extends TagChild {
   children: TagChild[]
 }
 
-type DialogMode = "create" | "edit"
-
-interface DialogState {
-  mode: DialogMode
-  tag?: TagChild | TagParent
-}
+type DialogState =
+  | { mode: "create" }
+  | { mode: "edit"; tag: TagChild | TagParent }
 
 interface FormState {
   name: string
@@ -84,7 +80,7 @@ export default function TagManager() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
 
-  useEffect(() => { loadTags() }, [])
+  useEffect(() => { void loadTags() }, [])
 
   async function loadTags() {
     const res = await fetch("/api/tags")
@@ -108,7 +104,7 @@ export default function TagManager() {
     if (!dialog) return
     setSaving(true)
     setError("")
-    const url = dialog.mode === "edit" ? `/api/tags/${dialog.tag!.id}` : "/api/tags"
+    const url = dialog.mode === "edit" ? `/api/tags/${dialog.tag.id}` : "/api/tags"
     const method = dialog.mode === "edit" ? "PUT" : "POST"
     const res = await fetch(url, {
       method,

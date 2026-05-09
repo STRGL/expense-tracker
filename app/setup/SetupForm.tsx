@@ -1,4 +1,3 @@
-// app/setup/SetupForm.js
 "use client"
 
 import { useState } from "react"

@@ -11,7 +11,7 @@ interface Props {
 
 export default function NewTransactionButton({ onSaved }: Props) {
   const [open, setOpen] = useState(false)
-  const [userId, setUserId] = useState(null)
+  const [userId, setUserId] = useState<string | null>(null)
 
   useEffect(() => {
     fetch("/api/profile").then((r) => r.json()).then((p) => setUserId(p.id))

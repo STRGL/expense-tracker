@@ -1,4 +1,3 @@
-// app/setup/page.js
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
 import SetupForm from "./SetupForm"

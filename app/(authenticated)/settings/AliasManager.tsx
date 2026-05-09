@@ -1,4 +1,3 @@
-// app/(authenticated)/settings/AliasManager.tsx
 "use client"
 
 import { useState, useEffect } from "react"
@@ -17,12 +16,9 @@ interface AliasRow {
   isShared: boolean
 }
 
-type DialogMode = "create" | "edit"
-
-interface DialogState {
-  mode: DialogMode
-  alias?: AliasRow
-}
+type DialogState =
+  | { mode: "create" }
+  | { mode: "edit"; alias: AliasRow }
 
 interface FormState {
   rawName: string
@@ -37,7 +33,7 @@ export default function AliasManager() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { void load() }, [])
 
   async function load() {
     const res = await fetch("/api/aliases")
@@ -60,7 +56,7 @@ export default function AliasManager() {
     if (!dialog) return
     setSaving(true)
     setError("")
-    const url = dialog.mode === "edit" ? `/api/aliases/${dialog.alias!.id}` : "/api/aliases"
+    const url = dialog.mode === "edit" ? `/api/aliases/${dialog.alias.id}` : "/api/aliases"
     const method = dialog.mode === "edit" ? "PUT" : "POST"
     const res = await fetch(url, {
       method,
