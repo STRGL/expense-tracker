@@ -29,6 +29,7 @@ model User {
   merchantAliases       MerchantAlias[]
   importRules           ImportRule[]
   importBatches         ImportBatch[]
+  paymentsFrom          Transaction[]     @relation("PaymentFrom")
 }
 
 model Transaction {
@@ -40,11 +41,13 @@ model Transaction {
   notes         String?
   createdById   String
   importBatchId String?
+  paymentFromUserId String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
   createdBy     User              @relation("TransactionCreator", fields: [createdById], references: [id])
   importBatch   ImportBatch?      @relation(fields: [importBatchId], references: [id])
+  paymentFrom   User?             @relation("PaymentFrom", fields: [paymentFromUserId], references: [id])
   splits        TransactionSplit[]
   notifications Notification[]
   suggestions   SplitSuggestion[]
