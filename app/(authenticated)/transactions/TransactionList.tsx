@@ -161,6 +161,15 @@ export default function TransactionList({ onReload: _onReload }: Props = {}) {
     if (res.ok) load()
   }
 
+  async function handleBulkRenameMerchant(name: string) {
+    const res = await fetch("/api/transactions/bulk", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids: Array.from(selectedIds), merchantName: name }),
+    })
+    if (res.ok) load()
+  }
+
   async function toggleChildren(txId: string) {
     if (expandedIds.has(txId)) {
       setExpandedIds(prev => { const n = new Set(prev); n.delete(txId); return n })
@@ -480,6 +489,7 @@ export default function TransactionList({ onReload: _onReload }: Props = {}) {
         onClear={() => setSelectedIds(new Set())}
         onDelete={handleBulkDelete}
         onTagChange={handleBulkTagChange}
+        onRenameMerchant={handleBulkRenameMerchant}
         tags={tags}
       />
 

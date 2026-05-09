@@ -4,6 +4,27 @@ import { requireAuth } from "@/lib/api-helpers"
 
 export const dynamic = "force-dynamic"
 
+export async function PUT(request: Request) {
+  const { session, error: authError } = await requireAuth()
+  if (authError) return authError
+
+  const { ids, merchantName } = await request.json()
+
+  if (!ids || !Array.isArray(ids) || ids.length === 0) {
+    return NextResponse.json({ error: "ids array is required" }, { status: 400 })
+  }
+  if (!merchantName?.trim()) {
+    return NextResponse.json({ error: "merchantName is required" }, { status: 400 })
+  }
+
+  const result = await prisma.transaction.updateMany({
+    where: { id: { in: ids }, createdById: session.user.id },
+    data: { merchantName: merchantName.trim() },
+  })
+
+  return NextResponse.json({ success: true, count: result.count })
+}
+
 export async function DELETE(request: Request) {
   const { session, error: authError } = await requireAuth()
   if (authError) return authError
