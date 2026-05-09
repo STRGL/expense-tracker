@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import SplitPanel, { type Split } from "./SplitPanel"
+import SplitWarningModal from "./SplitWarningModal"
 import type { FormEvent } from "react"
 
 interface TransactionInitial {
@@ -59,6 +60,8 @@ export default function TransactionForm({ initial, currentUserId, onSaved, onCan
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
   const [otherUsers, setOtherUsers] = useState<OtherUser[]>([])
+  const [showSplitWarning, setShowSplitWarning] = useState(false)
+  const [splitWarningAcknowledged, setSplitWarningAcknowledged] = useState(false)
   const [paymentFromUserId, setPaymentFromUserId] = useState<string | null>(
     initial?.paymentFromUserId ?? null
   )
@@ -83,6 +86,16 @@ export default function TransactionForm({ initial, currentUserId, onSaved, onCan
       .then(r => r.json())
       .then((users: OtherUser[]) => setOtherUsers(users.filter((u: OtherUser) => u.id !== currentUserId)))
   }, [isEdit, currentUserId])
+
+  useEffect(() => {
+    if (isEdit) return
+    fetch("/api/profile")
+      .then(r => r.json())
+      .then((data: { hasAcknowledgedSplitWarning?: boolean }) => {
+        if (data.hasAcknowledgedSplitWarning) setSplitWarningAcknowledged(true)
+      })
+      .catch(() => setSplitWarningAcknowledged(true))
+  }, [isEdit])
 
   function handleMerchantChange(value: string) {
     setForm((f) => ({ ...f, merchantRaw: value, merchantName: value }))
@@ -114,6 +127,12 @@ export default function TransactionForm({ initial, currentUserId, onSaved, onCan
     const splitSum = splits.reduce((s, sp) => s + sp.amount, 0)
     if (Math.abs(splitSum - absAmount) > 0.011) {
       setError("Split amounts must add up to the total amount.")
+      return
+    }
+
+    const hasOtherSplits = splits.some(s => s.userId !== currentUserId)
+    if (hasOtherSplits && !splitWarningAcknowledged) {
+      setShowSplitWarning(true)
       return
     }
 
@@ -273,6 +292,13 @@ export default function TransactionForm({ initial, currentUserId, onSaved, onCan
           {saving ? "Saving..." : isEdit ? "Save changes" : "Add transaction"}
         </Button>
       </div>
+      <SplitWarningModal
+        open={showSplitWarning}
+        onAcknowledge={() => {
+          setSplitWarningAcknowledged(true)
+          setShowSplitWarning(false)
+        }}
+      />
     </form>
   )
 }

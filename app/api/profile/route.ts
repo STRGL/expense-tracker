@@ -15,7 +15,7 @@ export async function GET() {
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { id: true, name: true, email: true, wage: true, role: true, themeAccent: true },
+    select: { id: true, name: true, email: true, wage: true, role: true, themeAccent: true, hasAcknowledgedSplitWarning: true },
   })
 
   return NextResponse.json(user)
@@ -25,7 +25,7 @@ export async function PUT(request: Request) {
   const { session, error } = await requireAuth()
   if (error) return error
 
-  const { name, email, password, wage, themeAccent } = await request.json()
+  const { name, email, password, wage, themeAccent, hasAcknowledgedSplitWarning } = await request.json()
   const data: Prisma.UserUpdateInput = {}
 
   if (name?.trim()) data.name = name.trim()
@@ -43,6 +43,9 @@ export async function PUT(request: Request) {
     }
     data.themeAccent = themeAccent
   }
+  if (hasAcknowledgedSplitWarning === true) {
+    data.hasAcknowledgedSplitWarning = true
+  }
 
   if (Object.keys(data).length === 0) {
     return NextResponse.json({ error: "No fields to update" }, { status: 400 })
@@ -51,7 +54,7 @@ export async function PUT(request: Request) {
   const user = await prisma.user.update({
     where: { id: session.user.id },
     data,
-    select: { id: true, name: true, email: true, wage: true, role: true, themeAccent: true },
+    select: { id: true, name: true, email: true, wage: true, role: true, themeAccent: true, hasAcknowledgedSplitWarning: true },
   })
 
   return NextResponse.json(user)
