@@ -123,7 +123,7 @@ export async function POST(request: Request) {
   }
 
   // Validate parent if creating a child
-  let parentTx: { merchantRaw: string; createdById: string } | null = null
+  let parentTx: { date: Date; merchantRaw: string; createdById: string } | null = null
   if (parentId) {
     const parent = await prisma.transaction.findUnique({
       where: { id: parentId },
@@ -165,7 +165,7 @@ export async function POST(request: Request) {
   const transaction = await prisma.$transaction(async (tx) => {
     const t = await tx.transaction.create({
       data: {
-        date: new Date(date),
+        date: parentId ? (parentTx?.date ?? new Date(date)) : new Date(date),
         merchantRaw: parentId ? (parentTx?.merchantRaw ?? merchantRaw.trim()) : merchantRaw.trim(),
         merchantName: merchantName.trim(),
         totalAmount: Number(totalAmount),
