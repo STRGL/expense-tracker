@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
+import Spinner from "@/components/ui/Spinner"
 import NotificationItem, { type NotificationData } from "./NotificationItem"
 
 export default function NotificationList() {
@@ -25,9 +26,7 @@ export default function NotificationList() {
 
   const unreadCount = notifications.filter((n) => !n.read).length
 
-  if (loading) {
-    return <p className="text-sm text-muted-foreground py-8 text-center">Loading...</p>
-  }
+  if (loading) return <Spinner />
 
   if (notifications.length === 0) {
     return <p className="text-sm text-muted-foreground py-8 text-center">No notifications yet.</p>

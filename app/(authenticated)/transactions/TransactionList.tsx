@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
+import Spinner from "@/components/ui/Spinner"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import ConfidenceDot from "@/components/transactions/ConfidenceDot"
@@ -226,7 +227,7 @@ export default function TransactionList({ onReload: _onReload }: Props = {}) {
 
       {/* Table */}
       {loading ? (
-        <p className="text-sm text-muted-foreground py-8 text-center">Loading...</p>
+        <Spinner />
       ) : transactions.length === 0 ? (
         <p className="text-sm text-muted-foreground py-8 text-center">No transactions found.</p>
       ) : (

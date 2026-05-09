@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { Loader2 } from "lucide-react"
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog"
@@ -114,7 +115,9 @@ export default function TransactionDialog({ transaction, onClose, onSaved }: Pro
       <Dialog open onOpenChange={onClose}>
         <DialogContent>
           <DialogTitle className="sr-only">Loading transaction</DialogTitle>
-          <p className="text-sm text-muted-foreground py-8 text-center">Loading...</p>
+          <div className="flex justify-center py-6">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          </div>
         </DialogContent>
       </Dialog>
     )

@@ -3,6 +3,7 @@
 import { useState, useCallback, Suspense } from "react"
 import TransactionList from "./TransactionList"
 import NewTransactionButton from "./NewTransactionButton"
+import Spinner from "@/components/ui/Spinner"
 
 export default function TransactionListContainer() {
   const [reloadKey, setReloadKey] = useState(0)
@@ -13,7 +14,7 @@ export default function TransactionListContainer() {
       <div className="flex justify-end">
         <NewTransactionButton onSaved={reload} />
       </div>
-      <Suspense fallback={<p className="text-sm text-muted-foreground py-8 text-center">Loading...</p>}>
+      <Suspense fallback={<Spinner />}>
         <TransactionList key={reloadKey} onReload={reload} />
       </Suspense>
     </div>

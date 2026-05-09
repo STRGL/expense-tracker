@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
+import Spinner from "@/components/ui/Spinner"
 import type { PersonPaymentDetail } from "@/types/payments"
 
 function formatAmount(n: number) {
@@ -34,9 +35,7 @@ export default function PersonPayments({ userId }: Props) {
     return <p className="text-sm text-muted-foreground py-8 text-center">User not found.</p>
   }
 
-  if (!detail) {
-    return <p className="text-sm text-muted-foreground py-8 text-center">Loading...</p>
-  }
+  if (!detail) return <Spinner />
 
   const positive = detail.net >= 0
 

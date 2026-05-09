@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
+import Spinner from "@/components/ui/Spinner"
 import type { PaymentUserSummary } from "@/types/payments"
 
 function formatAmount(n: number) {
@@ -21,9 +22,7 @@ export default function PaymentsOverview() {
       .catch(() => setSummaries([]))
   }, [])
 
-  if (!summaries) {
-    return <p className="text-sm text-muted-foreground py-8 text-center">Loading...</p>
-  }
+  if (!summaries) return <Spinner />
 
   const nonZero = summaries.filter(s => Math.abs(s.net) >= 0.01)
 

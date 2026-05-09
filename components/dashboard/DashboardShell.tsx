@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import Spinner from "@/components/ui/Spinner"
 import { Button } from "@/components/ui/button"
 import { getDefaultPeriod, computeDateRange, type Preset } from "@/lib/period-utils"
 import PeriodSelector, { type DashboardPeriod } from "./PeriodSelector"
@@ -69,7 +70,7 @@ export default function DashboardShell() {
   }, [config])
 
   if (!config) {
-    return <p className="text-sm text-muted-foreground py-8 text-center">Loading dashboard...</p>
+    return <Spinner />
   }
 
   return (
@@ -100,7 +101,7 @@ export default function DashboardShell() {
       )}
 
       {loading ? (
-        <p className="text-sm text-muted-foreground py-8 text-center">Loading...</p>
+        <Spinner />
       ) : (
         <WidgetGrid
           widgets={config.widgets}

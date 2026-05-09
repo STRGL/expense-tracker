@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
+import Spinner from "@/components/ui/Spinner"
 import { cn } from "@/lib/utils"
 import { ACCENT_THEMES, ACCENT_SWATCHES } from "@/lib/accent-themes"
 import type { AccentThemeKey } from "@/lib/accent-themes"
@@ -107,7 +108,7 @@ export default function ProfileForm() {
     accentTimerRef.current = setTimeout(() => setAccentSaved(false), 2000)
   }
 
-  if (!profile) return <p className="text-sm text-muted-foreground">Loading...</p>
+  if (!profile) return <Spinner />
 
   return (
     <div className="space-y-6">

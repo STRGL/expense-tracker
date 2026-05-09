@@ -4,10 +4,11 @@ export const metadata = { title: "Search — Expense Tracker" }
 
 import { Suspense } from "react"
 import SearchPage from "@/components/search/SearchPage"
+import Spinner from "@/components/ui/Spinner"
 
 export default function SearchRoute() {
   return (
-    <Suspense fallback={<p className="text-sm text-muted-foreground py-8 text-center">Loading...</p>}>
+    <Suspense fallback={<Spinner />}>
       <SearchPage />
     </Suspense>
   )
