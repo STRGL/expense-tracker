@@ -24,7 +24,7 @@ export async function GET(request: Request) {
   const prevDateFrom = new Date(dateFrom.getTime() - duration - 1)
   const prevDateTo = new Date(dateFrom.getTime() - 1)
 
-  const splitQuery = { userId: session.user.id, status: "active" }
+  const splitQuery = { userId: session.user.id, status: "active", hiddenAt: null }
   const splitInclude = {
     transaction: { select: { id: true, date: true, merchantName: true, totalAmount: true } },
     tag: { select: { id: true, name: true, colour: true, parentId: true } },

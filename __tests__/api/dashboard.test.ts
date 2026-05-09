@@ -99,6 +99,23 @@ describe("GET /api/dashboard", () => {
     expect(body.topMerchants).toHaveLength(0)
     expect(body.topTransactions).toHaveLength(0)
   })
+
+  it("excludes splits where hiddenAt is set", async () => {
+    auth.mockResolvedValue(session)
+    const currentSplits = [
+      makeSplit(-100, "Groceries", "#22c55e", "Tesco", "2026-04-01"),
+    ]
+    prisma.transactionSplit.findMany
+      .mockResolvedValueOnce(currentSplits)
+      .mockResolvedValueOnce([])
+    const req = new Request("http://localhost/api/dashboard?dateFrom=2026-04-01&dateTo=2026-04-30")
+    await GET(req)
+    expect(prisma.transactionSplit.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ hiddenAt: null }),
+      })
+    )
+  })
 })
 
 describe("GET /api/dashboard/config", () => {
