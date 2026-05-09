@@ -12,7 +12,10 @@ async function getAccessibleTransaction(id: string, userId: string) {
     where: { id },
     include: {
       splits: {
-        include: { tag: { select: { id: true, name: true, colour: true } } },
+        include: {
+          tag: { select: { id: true, name: true, colour: true } },
+          user: { select: { name: true } },
+        },
       },
       paymentFrom: { select: { id: true, name: true } },
       children: {

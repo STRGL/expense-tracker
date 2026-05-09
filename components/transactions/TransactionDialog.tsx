@@ -30,6 +30,7 @@ function formatAmount(amount: number) {
 interface SplitDetail {
   id: string
   userId: string
+  userName?: string
   amount: number
   splitMethod: string
   tagId: string | null
@@ -292,9 +293,13 @@ export default function TransactionDialog({ transaction, onClose, onSaved }: Pro
                 {detail.splits.map((s) => (
                   <div key={s.id} className="flex justify-between">
                     <span className={s.userId === userId ? "font-medium" : "text-muted-foreground"}>
-                      {s.userId === userId ? "You" : s.userId}
+                      {s.userId === userId ? "You" : (s.userName ?? s.userId)}
                     </span>
-                    <span className="tabular-nums">{formatAmount(s.amount)}</span>
+                    {s.amount === 0 && s.splitMethod === "proportional" ? (
+                      <span className="text-xs text-muted-foreground italic">Pending</span>
+                    ) : (
+                      <span className="tabular-nums">{formatAmount(s.amount)}</span>
+                    )}
                   </div>
                 ))}
               </div>
