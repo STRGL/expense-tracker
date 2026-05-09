@@ -34,6 +34,16 @@ interface SplitDetail {
   tagId: string | null
 }
 
+export interface ChildItem {
+  id: string
+  merchantName: string
+  totalAmount: number
+  isSystemLine: boolean
+  distributeCost: boolean
+  splits: SplitDetail[]
+  mySplit?: SplitDetail | null
+}
+
 export interface TransactionDetail {
   id: string
   date: string
@@ -42,8 +52,14 @@ export interface TransactionDetail {
   totalAmount: number
   notes: string | null
   isOwner: boolean
+  createdById: string
   splits: SplitDetail[]
   mySplit: SplitDetail | null
+  parentId: string | null
+  isSystemLine: boolean
+  distributeCost: boolean
+  children: ChildItem[]
+  systemLine: ChildItem | null
 }
 
 interface FlatTag {
@@ -78,7 +94,15 @@ export default function TransactionDialog({ transaction, onClose, onSaved }: Pro
       fetch("/api/profile").then(ok) as Promise<{ id: string }>,
       fetch("/api/tags").then(ok) as Promise<TagWithChildren[]>,
     ]).then(([det, profile, tagTree]) => {
-      setDetail(det)
+      setDetail({
+        ...det,
+        children: det.children ?? [],
+        systemLine: det.systemLine ?? null,
+        parentId: det.parentId ?? null,
+        isSystemLine: det.isSystemLine ?? false,
+        distributeCost: det.distributeCost ?? false,
+        createdById: det.createdById ?? "",
+      })
       setUserId(profile.id)
       setMyTagId(det.mySplit?.tagId ?? null)
       const flat: FlatTag[] = []
@@ -207,6 +231,30 @@ export default function TransactionDialog({ transaction, onClose, onSaved }: Pro
                     <span className="tabular-nums">{formatAmount(s.amount)}</span>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {detail.children.length > 0 && (
+            <div>
+              <p className="text-xs text-muted-foreground mb-1.5">Line items</p>
+              <div className="space-y-1 text-sm">
+                {detail.children.map(child => (
+                  <div key={child.id} className="flex justify-between">
+                    <span>{child.merchantName}</span>
+                    <span className="tabular-nums text-muted-foreground">
+                      {new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(Math.abs(child.totalAmount))}
+                    </span>
+                  </div>
+                ))}
+                {detail.systemLine && (
+                  <div className="flex justify-between text-muted-foreground">
+                    <span className="italic">Other (unallocated)</span>
+                    <span className="tabular-nums">
+                      {new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(Math.abs(detail.systemLine.totalAmount))}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           )}
