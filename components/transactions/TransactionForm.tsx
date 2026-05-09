@@ -18,6 +18,12 @@ interface TransactionInitial {
   totalAmount?: number
   notes?: string | null
   splits?: Split[]
+  paymentFromUserId?: string | null
+}
+
+interface OtherUser {
+  id: string
+  name: string
 }
 
 interface MerchantAlias {
@@ -52,6 +58,10 @@ export default function TransactionForm({ initial, currentUserId, onSaved, onCan
   )
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
+  const [otherUsers, setOtherUsers] = useState<OtherUser[]>([])
+  const [paymentFromUserId, setPaymentFromUserId] = useState<string | null>(
+    initial?.paymentFromUserId ?? null
+  )
 
   const [, setAliases] = useState<MerchantAlias[]>([])
   const [suggestions, setSuggestions] = useState<MerchantAlias[]>([])
@@ -66,6 +76,13 @@ export default function TransactionForm({ initial, currentUserId, onSaved, onCan
         fuseRef.current = new Fuse<MerchantAlias>(data, { keys: ["rawName", "niceName"], threshold: 0.4 })
       })
   }, [])
+
+  useEffect(() => {
+    if (!isEdit) return
+    fetch("/api/users/active")
+      .then(r => r.json())
+      .then((users: OtherUser[]) => setOtherUsers(users.filter((u: OtherUser) => u.id !== currentUserId)))
+  }, [isEdit, currentUserId])
 
   function handleMerchantChange(value: string) {
     setForm((f) => ({ ...f, merchantRaw: value, merchantName: value }))
@@ -116,6 +133,7 @@ export default function TransactionForm({ initial, currentUserId, onSaved, onCan
         ...form,
         totalAmount: signedTotal,
         splits: signedSplits,
+        ...(isEdit && { paymentFromUserId }),
       }),
     })
     const data = await res.json()
@@ -211,6 +229,28 @@ export default function TransactionForm({ initial, currentUserId, onSaved, onCan
           onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
         />
       </div>
+
+      {isEdit && otherUsers.length > 0 && (
+        <div className="space-y-1.5">
+          <Label htmlFor="paymentFrom">
+            Payment from <span className="text-muted-foreground text-xs">(optional)</span>
+          </Label>
+          <select
+            id="paymentFrom"
+            className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            value={paymentFromUserId ?? ""}
+            onChange={e => setPaymentFromUserId(e.target.value || null)}
+          >
+            <option value="">— None —</option>
+            {otherUsers.map(u => (
+              <option key={u.id} value={u.id}>{u.name}</option>
+            ))}
+          </select>
+          <p className="text-xs text-muted-foreground">
+            Mark this transaction as a payment received from someone
+          </p>
+        </div>
+      )}
 
       <Separator />
 
