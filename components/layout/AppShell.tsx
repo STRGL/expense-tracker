@@ -1,4 +1,3 @@
-// components/layout/AppShell.js
 "use client"
 
 import { useState } from "react"

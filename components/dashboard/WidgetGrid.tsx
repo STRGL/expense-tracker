@@ -1,4 +1,3 @@
-// components/dashboard/WidgetGrid.js
 "use client"
 
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core"

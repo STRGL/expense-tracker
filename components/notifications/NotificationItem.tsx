@@ -1,4 +1,3 @@
-// components/notifications/NotificationItem.js
 "use client"
 
 import { useState } from "react"

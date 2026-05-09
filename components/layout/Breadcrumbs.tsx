@@ -1,4 +1,3 @@
-// components/layout/Breadcrumbs.js
 "use client"
 
 import Link from "next/link"

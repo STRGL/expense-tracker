@@ -1,4 +1,3 @@
-// components/transactions/TransactionDialog.js
 "use client"
 
 import { useState, useEffect } from "react"

@@ -73,7 +73,7 @@ export default function SpendByTag({ data, chartType = "donut" }: Props) {
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `£${v}`} axisLine={false} tickLine={false} />
                 <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="value" radius={[4, 4, 0, 0]} onClick={((d: unknown) => { const tagId = (d as { tagId?: string | null }).tagId; if (!drillTarget && tagId) setDrillTarget(tagId) }) as never}>
+                <Bar dataKey="value" radius={[4, 4, 0, 0]} onClick={(data: unknown) => { const d = data as { tagId?: string | null } | null; if (!drillTarget && d?.tagId) setDrillTarget(d.tagId) }}>
                   {chartData.map((entry) => (
                     <Cell key={entry.name} fill={entry.fill} />
                   ))}
@@ -90,7 +90,7 @@ export default function SpendByTag({ data, chartType = "donut" }: Props) {
                   innerRadius={chartType === "donut" ? "50%" : 0}
                   outerRadius="80%"
                   dataKey="value"
-                  onClick={((d: unknown) => { const tagId = (d as { tagId?: string | null }).tagId; if (!drillTarget && tagId) setDrillTarget(tagId) }) as never}
+                  onClick={(data: unknown) => { const d = data as { tagId?: string | null } | null; if (!drillTarget && d?.tagId) setDrillTarget(d.tagId) }}
                   style={{ cursor: drillTarget ? "default" : "pointer" }}
                 >
                   {chartData.map((entry) => (

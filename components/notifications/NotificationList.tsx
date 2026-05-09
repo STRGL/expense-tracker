@@ -1,4 +1,3 @@
-// components/notifications/NotificationList.js
 "use client"
 
 import { useState, useEffect } from "react"
