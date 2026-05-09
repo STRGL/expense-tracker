@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Loader2 } from "lucide-react"
+import { toast } from "sonner"
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog"
@@ -86,28 +87,41 @@ export default function TransactionDialog({ transaction, onClose, onSaved }: Pro
         for (const child of parent.children) flat.push(child)
       }
       setTags(flat)
-    }).catch(() => onClose())
+    }).catch(() => {
+      toast.error("Failed to load transaction. Please try again.")
+      onClose()
+    })
   }, [transaction])
 
   async function handleTagSave() {
     if (!transaction) return
     setSavingTag(true)
-    await fetch(`/api/transactions/${transaction.id}/my-split`, {
+    const res = await fetch(`/api/transactions/${transaction.id}/my-split`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ tagId: myTagId }),
     })
     setSavingTag(false)
-    onSaved?.()
+    if (res.ok) {
+      toast.success("Tag saved.")
+      onSaved?.()
+    } else {
+      toast.error("Failed to save tag.")
+    }
   }
 
   async function handleDelete() {
     if (!transaction) return
     if (!confirm("Delete this transaction? This cannot be undone.")) return
     setDeleting(true)
-    await fetch(`/api/transactions/${transaction.id}`, { method: "DELETE" })
+    const res = await fetch(`/api/transactions/${transaction.id}`, { method: "DELETE" })
     setDeleting(false)
-    onSaved?.()
+    if (res.ok) {
+      toast.success("Transaction deleted.")
+      onSaved?.()
+    } else {
+      toast.error("Failed to delete transaction.")
+    }
   }
 
   if (!detail || !userId || !transaction) {

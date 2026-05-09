@@ -4,6 +4,7 @@ import { Inter } from "next/font/google"
 import { SessionProvider } from "next-auth/react"
 import { cookies } from "next/headers"
 import { ThemeProvider } from "@/components/providers/ThemeProvider"
+import { Toaster } from "sonner"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -25,6 +26,7 @@ export default async function RootLayout({
       <body className={inter.className}>
         <ThemeProvider initialTheme={theme}>
           <SessionProvider>{children}</SessionProvider>
+          <Toaster theme={theme} richColors closeButton />
         </ThemeProvider>
       </body>
     </html>
