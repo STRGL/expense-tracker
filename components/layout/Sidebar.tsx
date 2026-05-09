@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation"
 import {
   LayoutDashboard,
   ArrowLeftRight,
+  Wallet,
   Upload,
   Search,
   Settings,
@@ -38,6 +39,7 @@ interface NavItemProps {
 const NAV_ITEMS: NavItemData[] = [
   { href: "/dashboard",    label: "Dashboard",   icon: LayoutDashboard },
   { href: "/transactions", label: "Transactions", icon: ArrowLeftRight },
+  { href: "/payments",     label: "Payments",     icon: Wallet },
   { href: "/imports",      label: "Import",       icon: Upload },
   { href: "/search",       label: "Search",       icon: Search },
 ]
