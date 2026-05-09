@@ -16,9 +16,10 @@ model User {
   wage            Float?
   dashboardConfig String?
   themeAccent     String    @default("blue")
-  isActive        Boolean   @default(true)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  isActive                    Boolean   @default(true)
+  hasAcknowledgedSplitWarning Boolean   @default(false)
+  createdAt                   DateTime  @default(now())
+  updatedAt                   DateTime  @updatedAt
 
   transactionsCreated   Transaction[]     @relation("TransactionCreator")
   splits                TransactionSplit[]
@@ -33,21 +34,26 @@ model User {
 }
 
 model Transaction {
-  id            String    @id @default(cuid())
-  date          DateTime
-  merchantRaw   String
-  merchantName  String
-  totalAmount   Float
-  notes         String?
-  createdById   String
-  importBatchId String?
+  id                String    @id @default(cuid())
+  date              DateTime
+  merchantRaw       String
+  merchantName      String
+  totalAmount       Float
+  notes             String?
+  createdById       String
+  importBatchId     String?
   paymentFromUserId String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  parentId          String?
+  distributeCost    Boolean   @default(false)
+  isSystemLine      Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   createdBy     User              @relation("TransactionCreator", fields: [createdById], references: [id])
   importBatch   ImportBatch?      @relation(fields: [importBatchId], references: [id])
   paymentFrom   User?             @relation("PaymentFrom", fields: [paymentFromUserId], references: [id])
+  parent        Transaction?      @relation("TransactionChildren", fields: [parentId], references: [id])
+  children      Transaction[]     @relation("TransactionChildren")
   splits        TransactionSplit[]
   notifications Notification[]
   suggestions   SplitSuggestion[]
@@ -61,6 +67,7 @@ model TransactionSplit {
   splitMethod   String
   tagId         String?
   status        String    @default("active")
+  hiddenAt      DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -164,7 +171,7 @@ model SplitSuggestion {
   createdAt        DateTime  @default(now())
   resolvedAt       DateTime?
 
-  transaction Transaction @relation(fields: [transactionId], references: [id])
+  transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
   fromUser    User        @relation("SuggestionFrom", fields: [fromUserId], references: [id])
   toUser      User        @relation("SuggestionTo", fields: [toUserId], references: [id])
 }
