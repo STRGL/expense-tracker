@@ -52,6 +52,9 @@ const mockSplit = {
     createdById: "u1",
     importBatchId: null,
     splits: [{ userId: "u1", amount: 50 }, { userId: "u2", amount: 50 }],
+    parentId: null,
+    isSystemLine: false,
+    _count: { children: 0 },
   },
 }
 
