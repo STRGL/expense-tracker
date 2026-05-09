@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label"
 import TransactionForm from "./TransactionForm"
 import SuggestChangeForm from "./SuggestChangeForm"
+import LineItemForm from "./LineItemForm"
 import type { TransactionListItem } from "@/types/api"
 import type { TagWithChildren } from "@/lib/tag-utils"
 
@@ -85,6 +86,7 @@ export default function TransactionDialog({ transaction, onClose, onSaved }: Pro
   const [deleting, setDeleting] = useState(false)
   const [declining, setDeclining] = useState(false)
   const [showSuggest, setShowSuggest] = useState(false)
+  const [showAddItem, setShowAddItem] = useState(false)
 
   useEffect(() => {
     if (!transaction) return
@@ -166,7 +168,7 @@ export default function TransactionDialog({ transaction, onClose, onSaved }: Pro
   if (isOwner && mode === "edit") {
     return (
       <Dialog open onOpenChange={onClose}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit transaction</DialogTitle>
           </DialogHeader>
@@ -176,6 +178,70 @@ export default function TransactionDialog({ transaction, onClose, onSaved }: Pro
             onSaved={onSaved}
             onCancel={() => setMode("view")}
           />
+
+          <div className="border-t pt-4 space-y-3">
+            <p className="text-sm font-medium">Line items</p>
+
+            {detail.children.length > 0 && (
+              <div className="space-y-1">
+                {detail.children.map(child => (
+                  <div key={child.id} className="flex items-center justify-between py-1.5 px-2 rounded-md border text-sm">
+                    <span>{child.merchantName}</span>
+                    <div className="flex items-center gap-3">
+                      <span className="tabular-nums text-muted-foreground">
+                        {new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(Math.abs(child.totalAmount))}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                        onClick={async () => {
+                          if (!confirm("Remove this line item? This will remove it from your records.")) return
+                          const res = await fetch(`/api/transactions/${child.id}`, { method: "DELETE" })
+                          if (res.ok) {
+                            onSaved?.()
+                          } else {
+                            toast.error("Failed to remove line item.")
+                          }
+                        }}
+                      >
+                        ×
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {detail.systemLine && (
+              <div className="flex items-center justify-between py-1.5 px-2 rounded-md bg-muted/50 text-sm text-muted-foreground">
+                <span className="italic">🔒 Other (unallocated)</span>
+                <span className="tabular-nums">
+                  {new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(Math.abs(detail.systemLine.totalAmount))}
+                </span>
+              </div>
+            )}
+
+            {showAddItem ? (
+              <LineItemForm
+                parentId={detail.id}
+                parentTotal={detail.totalAmount}
+                currentUserId={userId}
+                existingChildren={[...detail.children, ...(detail.systemLine ? [detail.systemLine] : [])]}
+                onSaved={() => { setShowAddItem(false); onSaved?.() }}
+                onCancel={() => setShowAddItem(false)}
+              />
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full text-xs"
+                onClick={() => setShowAddItem(true)}
+              >
+                + Add line item
+              </Button>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     )
