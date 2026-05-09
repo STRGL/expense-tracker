@@ -28,12 +28,14 @@ interface SidebarProps {
   collapsed: boolean
   onToggle: () => void
   isAdmin: boolean
+  hasOtherUsers: boolean
 }
 
 interface NavItemProps {
   item: NavItemData
   pathname: string
   collapsed: boolean
+  disabled?: boolean
 }
 
 const NAV_ITEMS: NavItemData[] = [
@@ -52,7 +54,7 @@ const ADMIN_ITEMS: NavItemData[] = [
   { href: "/admin", label: "User Management", icon: Users },
 ]
 
-export default function Sidebar({ collapsed, onToggle, isAdmin }: SidebarProps) {
+export default function Sidebar({ collapsed, onToggle, isAdmin, hasOtherUsers }: SidebarProps) {
   const pathname = usePathname()
 
   return (
@@ -86,7 +88,13 @@ export default function Sidebar({ collapsed, onToggle, isAdmin }: SidebarProps) 
 
         <nav className="flex-1 py-2 px-1.5 space-y-0.5">
           {NAV_ITEMS.map((item) => (
-            <NavItem key={item.href} item={item} pathname={pathname} collapsed={collapsed} />
+            <NavItem
+              key={item.href}
+              item={item}
+              pathname={pathname}
+              collapsed={collapsed}
+              disabled={item.href === "/payments" && !hasOtherUsers}
+            />
           ))}
         </nav>
 
@@ -103,11 +111,21 @@ export default function Sidebar({ collapsed, onToggle, isAdmin }: SidebarProps) 
   )
 }
 
-function NavItem({ item, pathname, collapsed }: NavItemProps) {
+function NavItem({ item, pathname, collapsed, disabled }: NavItemProps) {
   const Icon = item.icon
-  const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
+  const isActive = !disabled && (pathname === item.href || pathname.startsWith(item.href + "/"))
 
-  const linkContent = (
+  const itemContent = disabled ? (
+    <span
+      className={cn(
+        "flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium cursor-not-allowed opacity-40",
+        collapsed && "justify-center px-2"
+      )}
+    >
+      <Icon className="h-4 w-4 shrink-0" />
+      {!collapsed && <span>{item.label}</span>}
+    </span>
+  ) : (
     <Link
       href={item.href}
       className={cn(
@@ -123,14 +141,16 @@ function NavItem({ item, pathname, collapsed }: NavItemProps) {
     </Link>
   )
 
-  if (collapsed) {
+  if (collapsed || disabled) {
     return (
       <Tooltip>
-        <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
-        <TooltipContent side="right">{item.label}</TooltipContent>
+        <TooltipTrigger asChild>{itemContent}</TooltipTrigger>
+        <TooltipContent side="right">
+          {disabled ? "Add another user to use Payments" : item.label}
+        </TooltipContent>
       </Tooltip>
     )
   }
 
-  return linkContent
+  return itemContent
 }

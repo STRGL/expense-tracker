@@ -10,9 +10,10 @@ interface Props {
   children: React.ReactNode
   isAdmin: boolean
   themeAccent: AccentThemeKey
+  hasOtherUsers: boolean
 }
 
-export default function AppShell({ children, isAdmin, themeAccent }: Props) {
+export default function AppShell({ children, isAdmin, themeAccent, hasOtherUsers }: Props) {
   const [collapsed, setCollapsed] = useState(false)
 
   return (
@@ -22,6 +23,7 @@ export default function AppShell({ children, isAdmin, themeAccent }: Props) {
           collapsed={collapsed}
           onToggle={() => setCollapsed((c) => !c)}
           isAdmin={isAdmin}
+          hasOtherUsers={hasOtherUsers}
         />
         <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
           <Header />

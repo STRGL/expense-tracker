@@ -15,13 +15,22 @@ export default async function AuthenticatedLayout({
   const session = await auth()
   if (!session) redirect("/login")
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { themeAccent: true },
-  })
+  const [user, otherUsersCount] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { themeAccent: true },
+    }),
+    prisma.user.count({
+      where: { isActive: true, id: { not: session.user.id } },
+    }),
+  ])
 
   return (
-    <AppShell isAdmin={session.user.role === "admin"} themeAccent={(user?.themeAccent ?? "blue") as AccentThemeKey}>
+    <AppShell
+      isAdmin={session.user.role === "admin"}
+      themeAccent={(user?.themeAccent ?? "blue") as AccentThemeKey}
+      hasOtherUsers={otherUsersCount > 0}
+    >
       {children}
     </AppShell>
   )

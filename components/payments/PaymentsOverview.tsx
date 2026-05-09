@@ -13,8 +13,12 @@ export default function PaymentsOverview() {
 
   useEffect(() => {
     fetch("/api/payments")
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        return r.json()
+      })
       .then(setSummaries)
+      .catch(() => setSummaries([]))
   }, [])
 
   if (!summaries) {
