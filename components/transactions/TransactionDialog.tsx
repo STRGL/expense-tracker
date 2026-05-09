@@ -70,10 +70,11 @@ export default function TransactionDialog({ transaction, onClose, onSaved }: Pro
 
   useEffect(() => {
     if (!transaction) return
+    const ok = (r: Response) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() }
     Promise.all([
-      fetch(`/api/transactions/${transaction.id}`).then((r) => r.json()) as Promise<TransactionDetail>,
-      fetch("/api/profile").then((r) => r.json()) as Promise<{ id: string }>,
-      fetch("/api/tags").then((r) => r.json()) as Promise<TagWithChildren[]>,
+      fetch(`/api/transactions/${transaction.id}`).then(ok) as Promise<TransactionDetail>,
+      fetch("/api/profile").then(ok) as Promise<{ id: string }>,
+      fetch("/api/tags").then(ok) as Promise<TagWithChildren[]>,
     ]).then(([det, profile, tagTree]) => {
       setDetail(det)
       setUserId(profile.id)
@@ -84,7 +85,7 @@ export default function TransactionDialog({ transaction, onClose, onSaved }: Pro
         for (const child of parent.children) flat.push(child)
       }
       setTags(flat)
-    })
+    }).catch(() => onClose())
   }, [transaction])
 
   async function handleTagSave() {
@@ -112,6 +113,7 @@ export default function TransactionDialog({ transaction, onClose, onSaved }: Pro
     return (
       <Dialog open onOpenChange={onClose}>
         <DialogContent>
+          <DialogTitle className="sr-only">Loading transaction</DialogTitle>
           <p className="text-sm text-muted-foreground py-8 text-center">Loading...</p>
         </DialogContent>
       </Dialog>
