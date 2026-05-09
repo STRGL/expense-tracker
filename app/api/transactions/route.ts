@@ -38,8 +38,12 @@ export async function GET(request: Request) {
   const splitWhere = {
     userId: session.user.id,
     status: "active",
+    hiddenAt: null,
     ...(tagId ? { tagId } : {}),
-    transaction: txWhere,
+    transaction: {
+      ...txWhere,
+      isSystemLine: false,
+    },
   } satisfies Prisma.TransactionSplitWhereInput
 
   const total = await prisma.transactionSplit.count({ where: splitWhere })
@@ -52,6 +56,9 @@ export async function GET(request: Request) {
           splits: {
             where: { status: "active" },
             select: { userId: true, amount: true },
+          },
+          _count: {
+            select: { children: { where: { isSystemLine: false } } },
           },
         },
       },
@@ -83,6 +90,9 @@ export async function GET(request: Request) {
     splitMethod: split.splitMethod,
     splitCount: split.transaction.splits.length,
     importBatchId: split.transaction.importBatchId,
+    parentId: split.transaction.parentId,
+    isSystemLine: split.transaction.isSystemLine,
+    hasChildren: split.transaction._count.children > 0,
   }))
 
   return NextResponse.json({ transactions, total })

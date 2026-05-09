@@ -26,6 +26,9 @@ export interface TransactionListItem {
   splitCount: number
   importBatchId: string | null
   confidenceLevel?: ConfidenceLevel
+  parentId: string | null
+  isSystemLine: boolean
+  hasChildren: boolean
 }
 
 export interface SplitInput {
