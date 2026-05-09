@@ -254,8 +254,8 @@ export default function TransactionDialog({ transaction, onClose, onSaved }: Pro
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {detail.merchantName}
-            {detail.splits.some(s => s.splitMethod === "proportional" && s.amount === 0) && (
-              <Badge variant="outline" className="text-xs font-normal text-muted-foreground">Pending</Badge>
+            {detail.splits.some(s => s.splitMethod === "proportional") && (
+              <span className="text-sm font-normal italic text-muted-foreground">(Pending)</span>
             )}
             {!isOwner && (
               <Badge variant="outline" className="text-xs font-normal">Shared with you</Badge>

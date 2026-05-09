@@ -330,8 +330,8 @@ export default function TransactionList({ onReload: _onReload }: Props = {}) {
                       </td>
                       <td className="px-3 py-2.5 font-medium max-w-[200px] truncate">
                         {tx.merchantName}
-                        {tx.myAmount === 0 && tx.splitMethod === "proportional" && (
-                          <span className="ml-1 text-xs text-muted-foreground font-normal">(Pending)</span>
+                        {tx.splitMethod === "proportional" && (
+                          <span className="ml-1 text-xs text-muted-foreground font-normal italic">(Pending)</span>
                         )}
                       </td>
                       <td className="px-3 py-2.5">
