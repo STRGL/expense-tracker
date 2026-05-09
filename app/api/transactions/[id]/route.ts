@@ -136,20 +136,38 @@ export async function DELETE(
   if (error) return error
   if (!isOwner) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
 
+  const userId = session.user.id
+
   await prisma.$transaction(async (tx) => {
-    for (const split of transaction.splits) {
-      if (split.userId !== session.user.id) {
+    await tx.transactionSplit.updateMany({
+      where: { transactionId: id, userId, hiddenAt: null },
+      data: { hiddenAt: new Date() },
+    })
+
+    const allSplits = await tx.transactionSplit.findMany({
+      where: { transactionId: id },
+    })
+
+    const otherVisible = allSplits.filter(s => s.userId !== userId && s.hiddenAt === null)
+    if (otherVisible.length > 0) {
+      const user = await tx.user.findUnique({ where: { id: userId }, select: { name: true } })
+      for (const split of otherVisible) {
         await tx.notification.create({
           data: {
             userId: split.userId,
             transactionId: id,
-            type: "transaction_deleted",
+            type: "transaction_hidden",
+            message: `${user?.name ?? "Someone"} removed ${transaction.merchantName} from their records. Your copy is unaffected.`,
             read: false,
           },
         })
       }
     }
-    await tx.transaction.delete({ where: { id } })
+
+    if (allSplits.every(s => s.hiddenAt !== null)) {
+      await tx.splitSuggestion.deleteMany({ where: { transactionId: id } })
+      await tx.transaction.delete({ where: { id } })
+    }
   })
 
   return NextResponse.json({ success: true })

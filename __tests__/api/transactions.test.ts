@@ -12,6 +12,7 @@ jest.mock("@/lib/prisma", () => ({
       findMany: jest.fn(),
       findFirst: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
       deleteMany: jest.fn(),
       count: jest.fn(),
     },
@@ -21,6 +22,8 @@ jest.mock("@/lib/prisma", () => ({
       update: jest.fn(),
       delete: jest.fn(),
     },
+    splitSuggestion: { deleteMany: jest.fn() },
+    user: { findUnique: jest.fn() },
     notification: { create: jest.fn() },
     $transaction: jest.fn(),
   },
@@ -350,5 +353,91 @@ describe("PUT /api/transactions/[id]/my-split", () => {
     expect(prisma.transactionSplit.update).toHaveBeenCalledWith(
       expect.objectContaining({ data: { tagId: "t1" } })
     )
+  })
+})
+
+describe("DELETE /api/transactions/[id] — soft hide", () => {
+  beforeEach(() => jest.clearAllMocks())
+
+  const mockTxBase = {
+    id: "tx1",
+    merchantName: "Tesco",
+    totalAmount: 100,
+    createdById: "u1",
+    importBatchId: null,
+    paymentFromUserId: null,
+    paymentFrom: null,
+  }
+
+  it("sets hiddenAt on owner's split and sends notification to others", async () => {
+    auth.mockResolvedValue(session)
+    prisma.transaction.findUnique.mockResolvedValue({
+      ...mockTxBase,
+      splits: [
+        { id: "sp1", userId: "u1", status: "active", hiddenAt: null, tag: null },
+        { id: "sp2", userId: "u2", status: "active", hiddenAt: null, tag: null },
+      ],
+    })
+    prisma.$transaction.mockImplementation((cb: (tx: typeof prisma) => Promise<unknown>) => cb(prisma))
+    prisma.transactionSplit.updateMany.mockResolvedValue({ count: 1 })
+    prisma.transactionSplit.findMany.mockResolvedValue([
+      { id: "sp1", userId: "u1", hiddenAt: new Date() },
+      { id: "sp2", userId: "u2", hiddenAt: null },
+    ])
+    prisma.user.findUnique.mockResolvedValue({ name: "Alice" })
+    prisma.notification.create.mockResolvedValue({})
+
+    const res = await DELETE(new Request("http://localhost"), { params: Promise.resolve({ id: "tx1" }) })
+    const body = await res.json()
+
+    expect(res.status).toBe(200)
+    expect(body.success).toBe(true)
+    expect(prisma.transactionSplit.updateMany).toHaveBeenCalledWith({
+      where: { transactionId: "tx1", userId: "u1", hiddenAt: null },
+      data: expect.objectContaining({ hiddenAt: expect.any(Date) }),
+    })
+    expect(prisma.notification.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ userId: "u2", type: "transaction_hidden" }),
+      })
+    )
+    expect(prisma.transaction.delete).not.toHaveBeenCalled()
+  })
+
+  it("hard-deletes transaction when all splits are now hidden", async () => {
+    auth.mockResolvedValue(session)
+    prisma.transaction.findUnique.mockResolvedValue({
+      ...mockTxBase,
+      splits: [
+        { id: "sp1", userId: "u1", status: "active", hiddenAt: null, tag: null },
+      ],
+    })
+    prisma.$transaction.mockImplementation((cb: (tx: typeof prisma) => Promise<unknown>) => cb(prisma))
+    prisma.transactionSplit.updateMany.mockResolvedValue({ count: 1 })
+    prisma.transactionSplit.findMany.mockResolvedValue([
+      { id: "sp1", userId: "u1", hiddenAt: new Date() },
+    ])
+    prisma.splitSuggestion.deleteMany.mockResolvedValue({ count: 0 })
+    prisma.transaction.delete.mockResolvedValue({})
+
+    const res = await DELETE(new Request("http://localhost"), { params: Promise.resolve({ id: "tx1" }) })
+
+    expect(res.status).toBe(200)
+    expect(prisma.splitSuggestion.deleteMany).toHaveBeenCalledWith({ where: { transactionId: "tx1" } })
+    expect(prisma.transaction.delete).toHaveBeenCalledWith({ where: { id: "tx1" } })
+    expect(prisma.notification.create).not.toHaveBeenCalled()
+  })
+
+  it("returns 403 when user is not owner", async () => {
+    auth.mockResolvedValue(session)
+    prisma.transaction.findUnique.mockResolvedValue({
+      ...mockTxBase,
+      createdById: "u99",
+      splits: [
+        { id: "sp1", userId: "u1", status: "active", hiddenAt: null, tag: null },
+      ],
+    })
+    const res = await DELETE(new Request("http://localhost"), { params: Promise.resolve({ id: "tx1" }) })
+    expect(res.status).toBe(403)
   })
 })
