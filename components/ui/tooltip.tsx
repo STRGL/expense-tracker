@@ -14,13 +14,13 @@ function TooltipProvider({
 
 function Tooltip({
   ...props
-}) {
+}: React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Root>) {
   return <TooltipPrimitive.Root data-slot="tooltip" {...props} />;
 }
 
 function TooltipTrigger({
   ...props
-}) {
+}: React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Trigger>) {
   return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />;
 }
 
