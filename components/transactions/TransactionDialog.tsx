@@ -302,6 +302,13 @@ export default function TransactionDialog({ transaction, onClose, onSaved }: Pro
                   </div>
                 ))}
               </div>
+              {detail.mySplit?.splitMethod === "proportional" && (detail.mySplit?.amount ?? 0) === 0 && (
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  Your share will calculate once you{" "}
+                  <a href="/settings" className="underline hover:text-foreground transition-colors">set your annual wage</a>
+                  {" "}in Settings.
+                </p>
+              )}
             </div>
           )}
 
