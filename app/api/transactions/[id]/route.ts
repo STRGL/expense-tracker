@@ -93,7 +93,9 @@ export async function PUT(
   if (totalAmount != null) data.totalAmount = Number(totalAmount)
   if (notes !== undefined) data.notes = notes?.trim() || null
   if (paymentFromUserId !== undefined) {
-    data.paymentFromUserId = paymentFromUserId ?? null
+    data.paymentFrom = paymentFromUserId
+      ? { connect: { id: paymentFromUserId } }
+      : { disconnect: true }
   }
 
   const updated = await prisma.$transaction(async (tx) => {

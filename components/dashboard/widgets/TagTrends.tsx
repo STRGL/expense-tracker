@@ -17,7 +17,7 @@ export default function TagTrends({ data, direction }: Props) {
 
   const title = direction === "increase" ? "Top 3 tag increases" : "Top 3 tag decreases"
   const hasPrev = data?.tagTrends !== undefined
-  const insufficient = hasPrev && trends.length === 0 && (data?.summary?.totalSpend ?? 0) > 0
+  const insufficient = hasPrev && trends.length === 0 && (data?.summary?.totalOut ?? 0) > 0
 
   return (
     <WidgetContainer title={title} empty={trends.length === 0 && !insufficient} insufficient={insufficient}>

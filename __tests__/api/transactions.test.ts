@@ -287,7 +287,7 @@ describe("PUT /api/transactions/[id] — paymentFromUserId", () => {
     expect(res.status).toBe(200)
     expect(prisma.transaction.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ paymentFromUserId: "u2" }),
+        data: expect.objectContaining({ paymentFrom: { connect: { id: "u2" } } }),
       })
     )
   })
@@ -321,7 +321,7 @@ describe("PUT /api/transactions/[id] — paymentFromUserId", () => {
     expect(res.status).toBe(200)
     expect(prisma.transaction.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ paymentFromUserId: null }),
+        data: expect.objectContaining({ paymentFrom: { disconnect: true } }),
       })
     )
   })
