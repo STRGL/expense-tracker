@@ -167,12 +167,12 @@ export default function TransactionForm({ initial, currentUserId, onSaved, onCan
               type="button"
               className={cn("flex-1 transition-colors", transactionType === "debit" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted")}
               onClick={() => setTransactionType("debit")}
-            >Expense</button>
+            >Debit</button>
             <button
               type="button"
-              className={cn("flex-1 border-l transition-colors", transactionType === "credit" ? "bg-green-600 text-white" : "bg-background text-muted-foreground hover:bg-muted")}
+              className={cn("flex-1 border-l transition-colors", transactionType === "credit" ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:bg-muted")}
               onClick={() => setTransactionType("credit")}
-            >Income / Credit</button>
+            >Credit</button>
           </div>
         </div>
       </div>
