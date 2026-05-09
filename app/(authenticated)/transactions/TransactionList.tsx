@@ -1,6 +1,8 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import React, { useState, useEffect, useCallback } from "react"
+import { ChevronRight, ChevronDown, Loader2 } from "lucide-react"
+import type { TransactionDetail } from "@/components/transactions/TransactionDialog"
 import { useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import Spinner from "@/components/ui/Spinner"
@@ -59,6 +61,9 @@ export default function TransactionList({ onReload: _onReload }: Props = {}) {
   const [selected, setSelected] = useState<TransactionListItem | null>(null)
   const [tags, setTags] = useState<FlatTag[]>([])
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
+  const [childrenMap, setChildrenMap] = useState<Record<string, TransactionDetail[]>>({})
+  const [loadingChildren, setLoadingChildren] = useState<Set<string>>(new Set())
   const searchParams = useSearchParams()
   const [filters, setFilters] = useState<Filters>({
     merchant: searchParams.get("merchant") ?? "",
@@ -147,6 +152,23 @@ export default function TransactionList({ onReload: _onReload }: Props = {}) {
     if (res.ok) {
       load()
     }
+  }
+
+  async function toggleChildren(txId: string) {
+    if (expandedIds.has(txId)) {
+      setExpandedIds(prev => { const n = new Set(prev); n.delete(txId); return n })
+      return
+    }
+    if (!childrenMap[txId]) {
+      setLoadingChildren(prev => new Set(prev).add(txId))
+      const res = await fetch(`/api/transactions/${txId}`)
+      if (res.ok) {
+        const data = await res.json()
+        setChildrenMap(prev => ({ ...prev, [txId]: data.children ?? [] }))
+      }
+      setLoadingChildren(prev => { const n = new Set(prev); n.delete(txId); return n })
+    }
+    setExpandedIds(prev => new Set(prev).add(txId))
   }
 
   const hasFilters = Object.entries(filters).some(([k, v]) => !["sortBy", "sortOrder", "page", "limit"].includes(k) && v)
@@ -269,57 +291,127 @@ export default function TransactionList({ onReload: _onReload }: Props = {}) {
               </thead>
               <tbody className="divide-y">
                 {transactions.map((tx) => (
-                  <tr
-                    key={tx.id}
-                    className={`hover:bg-muted/30 cursor-pointer transition-colors ${selectedIds.has(tx.id) ? "bg-muted/50" : ""}`}
-                    onClick={() => setSelected(tx)}
-                  >
-                    <td className="px-3 py-2.5 text-center" onClick={e => e.stopPropagation()}>
-                      <input
-                        type="checkbox"
-                        className="h-3.5 w-3.5"
-                        checked={selectedIds.has(tx.id)}
-                        onChange={() => toggleSelection(tx.id)}
-                      />
-                    </td>
-                    <td className="px-1 py-2.5">
-                      <ConfidenceDot level={tx.confidenceLevel} />
-                    </td>
-                    <td className="px-3 py-2.5 text-muted-foreground whitespace-nowrap">
-                      {formatDate(tx.date)}
-                    </td>
-                    <td className="px-3 py-2.5 font-medium max-w-[200px] truncate">
-                      {tx.merchantName}
-                    </td>
-                    <td className="px-3 py-2.5">
-                      {tx.myTag ? (
-                        <span className="flex items-center gap-1.5">
-                          <span
-                            className="w-2 h-2 rounded-full shrink-0"
-                            style={{ backgroundColor: tx.myTag.colour }}
+                  <React.Fragment key={tx.id}>
+                    <tr
+                      key={`row-${tx.id}`}
+                      className={`hover:bg-muted/30 cursor-pointer transition-colors ${selectedIds.has(tx.id) ? "bg-muted/50" : ""}`}
+                      onClick={() => setSelected(tx)}
+                    >
+                      <td className="px-3 py-2.5 text-center" onClick={e => e.stopPropagation()}>
+                        {tx.hasChildren ? (
+                          <button
+                            type="button"
+                            className="h-3.5 w-3.5 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                            onClick={(e) => { e.stopPropagation(); void toggleChildren(tx.id) }}
+                            aria-label={expandedIds.has(tx.id) ? "Collapse line items" : "Expand line items"}
+                          >
+                            {loadingChildren.has(tx.id) ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : expandedIds.has(tx.id) ? (
+                              <ChevronDown className="h-3.5 w-3.5" />
+                            ) : (
+                              <ChevronRight className="h-3.5 w-3.5" />
+                            )}
+                          </button>
+                        ) : (
+                          <input
+                            type="checkbox"
+                            className="h-3.5 w-3.5"
+                            checked={selectedIds.has(tx.id)}
+                            onChange={() => toggleSelection(tx.id)}
                           />
-                          <span className="text-xs">{tx.myTag.name}</span>
-                        </span>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">Untagged</span>
-                      )}
-                    </td>
-                    <td className="px-3 py-2.5 text-right font-medium tabular-nums">
-                      <AmountCell amount={tx.myAmount} />
-                    </td>
-                    <td className="px-3 py-2.5 text-right text-muted-foreground tabular-nums">
-                      {tx.splitCount > 1 ? (
-                        <span className="flex items-center justify-end gap-1.5">
+                        )}
+                      </td>
+                      <td className="px-1 py-2.5">
+                        <ConfidenceDot level={tx.confidenceLevel} />
+                      </td>
+                      <td className="px-3 py-2.5 text-muted-foreground whitespace-nowrap">
+                        {formatDate(tx.date)}
+                      </td>
+                      <td className="px-3 py-2.5 font-medium max-w-[200px] truncate">
+                        {tx.merchantName}
+                        {tx.parentId && (
+                          <span className="ml-1.5 text-xs text-muted-foreground font-normal">line item</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2.5">
+                        {tx.myTag ? (
+                          <span className="flex items-center gap-1.5">
+                            <span
+                              className="w-2 h-2 rounded-full shrink-0"
+                              style={{ backgroundColor: tx.myTag.colour }}
+                            />
+                            <span className="text-xs">{tx.myTag.name}</span>
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Untagged</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2.5 text-right font-medium tabular-nums">
+                        <AmountCell amount={tx.myAmount} />
+                      </td>
+                      <td className="px-3 py-2.5 text-right text-muted-foreground tabular-nums">
+                        {tx.splitCount > 1 ? (
+                          <span className="flex items-center justify-end gap-1.5">
+                            <AmountCell amount={tx.totalAmount} />
+                            <Badge variant="outline" className="text-xs py-0 h-4">
+                              ÷{tx.splitCount}
+                            </Badge>
+                          </span>
+                        ) : (
                           <AmountCell amount={tx.totalAmount} />
-                          <Badge variant="outline" className="text-xs py-0 h-4">
-                            ÷{tx.splitCount}
-                          </Badge>
-                        </span>
-                      ) : (
-                        <AmountCell amount={tx.totalAmount} />
-                      )}
-                    </td>
-                  </tr>
+                        )}
+                      </td>
+                    </tr>
+                    {expandedIds.has(tx.id) && (childrenMap[tx.id] ?? []).map((child) => (
+                      <tr
+                        key={child.id}
+                        className="bg-muted/20 hover:bg-muted/40 cursor-pointer transition-colors"
+                        onClick={() => {
+                          const listItem: TransactionListItem = {
+                            id: child.id,
+                            date: typeof child.date === "string" ? child.date : new Date(child.date).toISOString(),
+                            merchantName: child.merchantName,
+                            merchantRaw: child.merchantRaw,
+                            totalAmount: child.totalAmount,
+                            notes: child.notes,
+                            createdById: "",
+                            isOwner: child.isOwner,
+                            myAmount: child.mySplit?.amount ?? child.totalAmount,
+                            mySplitId: child.mySplit?.id ?? "",
+                            myTagId: null,
+                            myTag: null,
+                            splitMethod: child.mySplit?.splitMethod ?? "equal",
+                            splitCount: child.splits.length,
+                            importBatchId: null,
+                            parentId: tx.id,
+                            isSystemLine: false,
+                            hasChildren: false,
+                          }
+                          setSelected(listItem)
+                        }}
+                      >
+                        <td className="px-3 py-2.5 text-center">
+                          <input type="checkbox" className="h-3.5 w-3.5" disabled />
+                        </td>
+                        <td className="px-1 py-2.5" />
+                        <td className="px-3 py-2.5 text-muted-foreground whitespace-nowrap text-xs">
+                          {formatDate(typeof child.date === "string" ? child.date : new Date(child.date).toISOString())}
+                        </td>
+                        <td className="px-3 py-2.5 max-w-[200px] truncate">
+                          <span className="text-xs text-muted-foreground mr-1">↳</span>
+                          <span className="text-sm">{child.merchantName}</span>
+                        </td>
+                        <td className="px-3 py-2.5" />
+                        <td className="px-3 py-2.5 text-right font-medium tabular-nums">
+                          <AmountCell amount={child.mySplit?.amount ?? child.totalAmount} />
+                        </td>
+                        <td className="px-3 py-2.5 text-right text-muted-foreground tabular-nums">
+                          <AmountCell amount={child.totalAmount} />
+                        </td>
+                      </tr>
+                    ))}
+                  </React.Fragment>
                 ))}
               </tbody>
             </table>
