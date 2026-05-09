@@ -149,16 +149,22 @@ export default function UserManagement() {
             {(dialog?.mode === "create" || dialog?.mode === "edit") && (
               <>
                 <div className="space-y-1.5">
-                  <Label>Name</Label>
+                  <Label htmlFor="user-name">Name</Label>
                   <Input
+                    id="user-name"
+                    name="name"
+                    autoComplete="name"
                     value={form.name ?? ""}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Email</Label>
+                  <Label htmlFor="user-email">Email</Label>
                   <Input
+                    id="user-email"
+                    name="email"
                     type="email"
+                    autoComplete="email"
                     value={form.email ?? ""}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
                   />
@@ -168,9 +174,12 @@ export default function UserManagement() {
 
             {(dialog?.mode === "create" || dialog?.mode === "password") && (
               <div className="space-y-1.5">
-                <Label>Password</Label>
+                <Label htmlFor="user-password">Password</Label>
                 <Input
+                  id="user-password"
+                  name="password"
                   type="password"
+                  autoComplete="new-password"
                   value={form.password ?? ""}
                   onChange={(e) => setForm({ ...form, password: e.target.value })}
                   placeholder="Minimum 8 characters"
@@ -179,7 +188,7 @@ export default function UserManagement() {
               </div>
             )}
 
-            {error && <p className="text-sm text-destructive">{error}</p>}
+            {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
           </div>
 
           <DialogFooter>

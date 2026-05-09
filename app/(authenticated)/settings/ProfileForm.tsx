@@ -147,12 +147,13 @@ export default function ProfileForm() {
                 id="password"
                 name="password"
                 type="password"
+                autoComplete="new-password"
                 placeholder="Leave blank to keep current password"
                 minLength={8}
               />
             </div>
             {message && (
-              <p className="text-sm text-muted-foreground">{message}</p>
+              <p role="alert" className="text-sm text-muted-foreground">{message}</p>
             )}
             <Button type="submit" disabled={saving}>
               {saving ? "Saving..." : "Save changes"}
