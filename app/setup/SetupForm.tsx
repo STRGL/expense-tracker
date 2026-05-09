@@ -13,12 +13,12 @@ export default function SetupForm() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setError("")
     setLoading(true)
 
-    const formData = new FormData(e.target)
+    const formData = new FormData(e.currentTarget)
     const name = formData.get("name")
     const email = formData.get("email")
     const password = formData.get("password")

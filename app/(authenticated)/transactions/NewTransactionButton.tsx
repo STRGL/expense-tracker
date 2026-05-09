@@ -5,7 +5,11 @@ import { Button } from "@/components/ui/button"
 import TransactionForm from "@/components/transactions/TransactionForm"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
-export default function NewTransactionButton({ onSaved }) {
+interface Props {
+  onSaved?: () => void
+}
+
+export default function NewTransactionButton({ onSaved }: Props) {
   const [open, setOpen] = useState(false)
   const [userId, setUserId] = useState(null)
 

@@ -1,3 +1,7 @@
+import type { ConfidenceLevel } from "./imports"
+
+export type { ConfidenceLevel }
+
 export interface TagSummary {
   id: string
   name: string
@@ -21,6 +25,7 @@ export interface TransactionListItem {
   splitMethod: string
   splitCount: number
   importBatchId: string | null
+  confidenceLevel: ConfidenceLevel | null | undefined
 }
 
 export interface SplitInput {

@@ -1,3 +1,4 @@
+import React from "react"
 import "./globals.css"
 import { Inter } from "next/font/google"
 import { SessionProvider } from "next-auth/react"
@@ -11,7 +12,11 @@ export const metadata = {
   description: "Track and split expenses",
 }
 
-export default async function RootLayout({ children }) {
+export default async function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   const cookieStore = await cookies()
   const theme = cookieStore.get("theme")?.value === "dark" ? "dark" : "light"
 

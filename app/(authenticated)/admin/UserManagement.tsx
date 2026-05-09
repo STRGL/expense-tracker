@@ -9,10 +9,31 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog"
 
+interface UserRow {
+  id: string
+  name: string
+  email: string
+  role: string
+  isActive: boolean
+}
+
+type DialogMode = "create" | "edit" | "password"
+
+interface DialogState {
+  mode: DialogMode
+  user?: UserRow
+}
+
+interface FormState {
+  name?: string
+  email?: string
+  password?: string
+}
+
 export default function UserManagement() {
-  const [users, setUsers] = useState([])
-  const [dialog, setDialog] = useState(null)
-  const [form, setForm] = useState({})
+  const [users, setUsers] = useState<UserRow[]>([])
+  const [dialog, setDialog] = useState<DialogState | null>(null)
+  const [form, setForm] = useState<FormState>({})
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
 
@@ -29,31 +50,33 @@ export default function UserManagement() {
     setError("")
   }
 
-  function openEdit(user) {
+  function openEdit(user: UserRow) {
     setForm({ name: user.name, email: user.email })
     setDialog({ mode: "edit", user })
     setError("")
   }
 
-  function openPassword(user) {
+  function openPassword(user: UserRow) {
     setForm({ password: "" })
     setDialog({ mode: "password", user })
     setError("")
   }
 
   async function handleSave() {
+    if (!dialog) return
     setSaving(true)
     setError("")
-    let url, method
+    let url: string
+    let method: string
 
     if (dialog.mode === "create") {
       url = "/api/users"
       method = "POST"
     } else if (dialog.mode === "edit") {
-      url = `/api/users/${dialog.user.id}`
+      url = `/api/users/${dialog.user!.id}`
       method = "PUT"
     } else {
-      url = `/api/users/${dialog.user.id}/password`
+      url = `/api/users/${dialog.user!.id}/password`
       method = "PUT"
     }
 
@@ -69,7 +92,7 @@ export default function UserManagement() {
     load()
   }
 
-  async function handleDeactivate(user) {
+  async function handleDeactivate(user: UserRow) {
     if (!confirm(`Deactivate ${user.name}? They will no longer be able to log in.`)) return
     await fetch(`/api/users/${user.id}`, { method: "DELETE" })
     load()

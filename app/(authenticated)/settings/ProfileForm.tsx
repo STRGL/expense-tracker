@@ -8,42 +8,53 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
 import { ACCENT_THEMES, ACCENT_SWATCHES } from "@/lib/accent-themes"
+import type { AccentThemeKey } from "@/lib/accent-themes"
+
+interface Profile {
+  id: string
+  name: string
+  email: string
+  wage: number | null
+  themeAccent: string | null
+}
 
 export default function ProfileForm() {
-  const [profile, setProfile] = useState(null)
+  const [profile, setProfile] = useState<Profile | null>(null)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState("")
-  const [accent, setAccent] = useState("blue")
+  const [accent, setAccent] = useState<AccentThemeKey>("blue")
   const [accentSaved, setAccentSaved] = useState(false)
   const [accentError, setAccentError] = useState("")
-  const accentTimerRef = useRef(null)
+  const accentTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     fetch("/api/profile")
       .then((r) => r.json())
-      .then((data) => {
+      .then((data: Profile) => {
         setProfile(data)
-        setAccent(data.themeAccent ?? "blue")
+        setAccent((data.themeAccent ?? "blue") as AccentThemeKey)
       })
   }, [])
 
   useEffect(() => {
-    return () => clearTimeout(accentTimerRef.current)
+    return () => {
+      if (accentTimerRef.current) clearTimeout(accentTimerRef.current)
+    }
   }, [])
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setSaving(true)
     setMessage("")
-    const formData = new FormData(e.target)
-    const body = {}
+    const formData = new FormData(e.currentTarget)
+    const body: Record<string, string | number | null> = {}
     const name = formData.get("name")
     const email = formData.get("email")
     const password = formData.get("password")
     const wage = formData.get("wage")
-    if (name) body.name = name
-    if (email) body.email = email
-    if (password) body.password = password
+    if (name) body.name = name as string
+    if (email) body.email = email as string
+    if (password) body.password = password as string
     if (wage !== "") body.wage = wage === "" ? null : Number(wage)
 
     const res = await fetch("/api/profile", {
@@ -56,13 +67,13 @@ export default function ProfileForm() {
     if (res.ok) {
       setProfile(data)
       setMessage("Profile updated.")
-      e.target.reset()
+      ;(e.target as HTMLFormElement).reset()
     } else {
       setMessage(data.error ?? "Update failed.")
     }
   }
 
-  async function handleAccentChange(name) {
+  async function handleAccentChange(name: AccentThemeKey) {
     setAccent(name)
     setAccentError("")
     const vars = ACCENT_THEMES[name] ?? ACCENT_THEMES.blue
@@ -76,9 +87,10 @@ export default function ProfileForm() {
         body: JSON.stringify({ themeAccent: name }),
       })
       if (!res.ok) {
-        fetch("/api/profile").then(r => r.json()).then(data => {
-          setAccent(data.themeAccent ?? "blue")
-          const revertVars = ACCENT_THEMES[data.themeAccent] ?? ACCENT_THEMES.blue
+        fetch("/api/profile").then(r => r.json()).then((data: Profile) => {
+          const revertKey = (data.themeAccent ?? "blue") as AccentThemeKey
+          setAccent(revertKey)
+          const revertVars = ACCENT_THEMES[revertKey] ?? ACCENT_THEMES.blue
           for (const [key, value] of Object.entries(revertVars)) {
             document.documentElement.style.setProperty(key, value)
           }
@@ -91,7 +103,7 @@ export default function ProfileForm() {
       return
     }
     setAccentSaved(true)
-    clearTimeout(accentTimerRef.current)
+    if (accentTimerRef.current) clearTimeout(accentTimerRef.current)
     accentTimerRef.current = setTimeout(() => setAccentSaved(false), 2000)
   }
 

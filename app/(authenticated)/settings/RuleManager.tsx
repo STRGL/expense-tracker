@@ -1,4 +1,4 @@
-// app/(authenticated)/settings/RuleManager.js
+// app/(authenticated)/settings/RuleManager.tsx
 "use client"
 
 import { useState, useEffect } from "react"
@@ -11,11 +11,40 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog"
 
+interface TagOption {
+  id: string
+  name: string
+  colour: string
+  parentId: string | null
+  children?: TagOption[]
+}
+
+interface RuleRow {
+  id: string
+  merchantPattern: string
+  tagId: string
+  isShared: boolean
+  tag: { id: string; name: string; colour: string } | null
+}
+
+type DialogMode = "create" | "edit"
+
+interface DialogState {
+  mode: DialogMode
+  rule?: RuleRow
+}
+
+interface FormState {
+  merchantPattern: string
+  tagId: string
+  isShared: boolean
+}
+
 export default function RuleManager() {
-  const [rules, setRules] = useState([])
-  const [allTags, setAllTags] = useState([])
-  const [dialog, setDialog] = useState(null)
-  const [form, setForm] = useState({ merchantPattern: "", tagId: "", isShared: false })
+  const [rules, setRules] = useState<RuleRow[]>([])
+  const [allTags, setAllTags] = useState<TagOption[]>([])
+  const [dialog, setDialog] = useState<DialogState | null>(null)
+  const [form, setForm] = useState<FormState>({ merchantPattern: "", tagId: "", isShared: false })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
 
@@ -23,11 +52,11 @@ export default function RuleManager() {
     load()
     fetch("/api/tags")
       .then((r) => r.json())
-      .then((tree) => {
-        const flat = []
+      .then((tree: TagOption[]) => {
+        const flat: TagOption[] = []
         for (const parent of tree) {
           flat.push(parent)
-          for (const child of parent.children) flat.push(child)
+          for (const child of parent.children ?? []) flat.push(child)
         }
         setAllTags(flat)
       })
@@ -44,16 +73,17 @@ export default function RuleManager() {
     setError("")
   }
 
-  function openEdit(rule) {
+  function openEdit(rule: RuleRow) {
     setForm({ merchantPattern: rule.merchantPattern, tagId: rule.tagId, isShared: rule.isShared })
     setDialog({ mode: "edit", rule })
     setError("")
   }
 
   async function handleSave() {
+    if (!dialog) return
     setSaving(true)
     setError("")
-    const url = dialog.mode === "edit" ? `/api/rules/${dialog.rule.id}` : "/api/rules"
+    const url = dialog.mode === "edit" ? `/api/rules/${dialog.rule!.id}` : "/api/rules"
     const method = dialog.mode === "edit" ? "PUT" : "POST"
     const res = await fetch(url, {
       method,
@@ -67,7 +97,7 @@ export default function RuleManager() {
     load()
   }
 
-  async function handleDelete(id) {
+  async function handleDelete(id: string) {
     await fetch(`/api/rules/${id}`, { method: "DELETE" })
     load()
   }

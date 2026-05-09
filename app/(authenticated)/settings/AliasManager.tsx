@@ -1,4 +1,4 @@
-// app/(authenticated)/settings/AliasManager.js
+// app/(authenticated)/settings/AliasManager.tsx
 "use client"
 
 import { useState, useEffect } from "react"
@@ -10,10 +10,30 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog"
 
+interface AliasRow {
+  id: string
+  rawName: string
+  niceName: string
+  isShared: boolean
+}
+
+type DialogMode = "create" | "edit"
+
+interface DialogState {
+  mode: DialogMode
+  alias?: AliasRow
+}
+
+interface FormState {
+  rawName: string
+  niceName: string
+  isShared: boolean
+}
+
 export default function AliasManager() {
-  const [aliases, setAliases] = useState([])
-  const [dialog, setDialog] = useState(null)
-  const [form, setForm] = useState({ rawName: "", niceName: "", isShared: false })
+  const [aliases, setAliases] = useState<AliasRow[]>([])
+  const [dialog, setDialog] = useState<DialogState | null>(null)
+  const [form, setForm] = useState<FormState>({ rawName: "", niceName: "", isShared: false })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
 
@@ -30,16 +50,17 @@ export default function AliasManager() {
     setError("")
   }
 
-  function openEdit(alias) {
+  function openEdit(alias: AliasRow) {
     setForm({ rawName: alias.rawName, niceName: alias.niceName, isShared: alias.isShared })
     setDialog({ mode: "edit", alias })
     setError("")
   }
 
   async function handleSave() {
+    if (!dialog) return
     setSaving(true)
     setError("")
-    const url = dialog.mode === "edit" ? `/api/aliases/${dialog.alias.id}` : "/api/aliases"
+    const url = dialog.mode === "edit" ? `/api/aliases/${dialog.alias!.id}` : "/api/aliases"
     const method = dialog.mode === "edit" ? "PUT" : "POST"
     const res = await fetch(url, {
       method,
@@ -53,7 +74,7 @@ export default function AliasManager() {
     load()
   }
 
-  async function handleDelete(id) {
+  async function handleDelete(id: string) {
     await fetch(`/api/aliases/${id}`, { method: "DELETE" })
     load()
   }

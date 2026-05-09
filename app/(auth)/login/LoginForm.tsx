@@ -14,12 +14,12 @@ export default function LoginForm() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setError("")
     setLoading(true)
 
-    const formData = new FormData(e.target)
+    const formData = new FormData(e.currentTarget)
     const result = await signIn("credentials", {
       email: formData.get("email"),
       password: formData.get("password"),

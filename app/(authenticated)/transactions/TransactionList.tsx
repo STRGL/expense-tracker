@@ -8,18 +8,40 @@ import { Badge } from "@/components/ui/badge"
 import ConfidenceDot from "@/components/transactions/ConfidenceDot"
 import TransactionDialog from "@/components/transactions/TransactionDialog"
 import BulkActionBar from "@/components/ui/BulkActionBar"
+import type { TransactionListItem, TagSummary } from "@/types/api"
 
-function formatDate(dateStr) {
+interface FlatTag extends TagSummary {
+  parentId: string | null
+}
+
+interface Filters {
+  merchant: string
+  dateFrom: string
+  dateTo: string
+  tagId: string
+  minAmount: string
+  maxAmount: string
+  sortBy: string
+  sortOrder: string
+  page: number
+  limit: number
+}
+
+interface Props {
+  onReload?: () => void
+}
+
+function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("en-GB", {
     day: "2-digit", month: "short", year: "numeric",
   })
 }
 
-function formatAmount(amount) {
+function formatAmount(amount: number) {
   return new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(Math.abs(amount))
 }
 
-function AmountCell({ amount, className = "" }) {
+function AmountCell({ amount, className = "" }: { amount: number; className?: string }) {
   const isCredit = amount > 0
   return (
     <span className={`${isCredit ? "text-green-600" : ""} ${className}`}>
@@ -29,15 +51,15 @@ function AmountCell({ amount, className = "" }) {
   )
 }
 
-export default function TransactionList() {
-  const [transactions, setTransactions] = useState([])
+export default function TransactionList({ onReload: _onReload }: Props = {}) {
+  const [transactions, setTransactions] = useState<TransactionListItem[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [selected, setSelected] = useState(null)
-  const [tags, setTags] = useState([])
-  const [selectedIds, setSelectedIds] = useState(new Set())
+  const [selected, setSelected] = useState<TransactionListItem | null>(null)
+  const [tags, setTags] = useState<FlatTag[]>([])
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const searchParams = useSearchParams()
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<Filters>({
     merchant: searchParams.get("merchant") ?? "",
     dateFrom: searchParams.get("dateFrom") ?? "",
     dateTo: searchParams.get("dateTo") ?? "",
@@ -55,9 +77,9 @@ export default function TransactionList() {
     const params = new URLSearchParams()
     Object.entries(filters).forEach(([k, v]) => {
       if (k === "page") {
-        params.set("offset", (filters.page - 1) * filters.limit)
+        params.set("offset", String((filters.page - 1) * filters.limit))
       } else if (v) {
-        params.set(k, v)
+        params.set(k, String(v))
       }
     })
     const res = await fetch(`/api/transactions?${params}`)
@@ -71,14 +93,14 @@ export default function TransactionList() {
   useEffect(() => { load() }, [load])
 
   useEffect(() => {
-    fetch("/api/tags").then((r) => r.json()).then((tree) => {
-      const flat = []
+    fetch("/api/tags").then((r) => r.json()).then((tree: Array<FlatTag & { children: FlatTag[] }>) => {
+      const flat: FlatTag[] = []
       for (const parent of tree) { flat.push(parent); for (const c of parent.children) flat.push(c) }
       setTags(flat)
     })
   }, [])
 
-  function handleFilterChange(updates) {
+  function handleFilterChange(updates: Partial<Filters>) {
     setFilters((f) => {
       const next = { ...f, ...updates }
       if (!updates.page) {
@@ -88,19 +110,19 @@ export default function TransactionList() {
     })
   }
 
-  function handleSortChange(field) {
+  function handleSortChange(field: string) {
     handleFilterChange({
       sortBy: field,
       sortOrder: filters.sortBy === field && filters.sortOrder === "asc" ? "desc" : "asc",
     })
   }
 
-  function SortIcon({ field }) {
+  function SortIcon({ field }: { field: string }) {
     if (filters.sortBy !== field) return <span className="text-muted-foreground/40 ml-1">↕</span>
     return <span className="ml-1">{filters.sortOrder === "asc" ? "↑" : "↓"}</span>
   }
 
-  function toggleSelection(id) {
+  function toggleSelection(id: string) {
     const next = new Set(selectedIds)
     if (next.has(id)) next.delete(id)
     else next.add(id)

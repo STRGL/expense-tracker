@@ -4,7 +4,11 @@ export const metadata = { title: "Review Import — Expense Tracker" }
 
 import ReviewTable from "@/components/imports/ReviewTable"
 
-export default async function ImportReviewPage({ params }) {
+export default async function ImportReviewPage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
   const { id } = await params
   return (
     <div className="space-y-4">

@@ -1,4 +1,4 @@
-// app/(authenticated)/settings/TagManager.js
+// app/(authenticated)/settings/TagManager.tsx
 "use client"
 
 import { useState, useEffect } from "react"
@@ -20,7 +20,12 @@ const PRESET_COLOURS = [
   "#3b82f6", "#8b5cf6", "#ec4899", "#6b7280",
 ]
 
-function ColourPicker({ value, onChange }) {
+interface ColourPickerProps {
+  value: string
+  onChange: (colour: string) => void
+}
+
+function ColourPicker({ value, onChange }: ColourPickerProps) {
   return (
     <div className="flex gap-2 flex-wrap">
       {PRESET_COLOURS.map((c) => (
@@ -46,10 +51,36 @@ function ColourPicker({ value, onChange }) {
   )
 }
 
+interface TagChild {
+  id: string
+  name: string
+  colour: string
+  isShared: boolean
+  parentId: string | null
+}
+
+interface TagParent extends TagChild {
+  children: TagChild[]
+}
+
+type DialogMode = "create" | "edit"
+
+interface DialogState {
+  mode: DialogMode
+  tag?: TagChild | TagParent
+}
+
+interface FormState {
+  name: string
+  colour: string
+  isShared: boolean
+  parentId?: string | null
+}
+
 export default function TagManager() {
-  const [tree, setTree] = useState([])
-  const [dialog, setDialog] = useState(null)
-  const [form, setForm] = useState({ name: "", colour: "#6b7280", isShared: false })
+  const [tree, setTree] = useState<TagParent[]>([])
+  const [dialog, setDialog] = useState<DialogState | null>(null)
+  const [form, setForm] = useState<FormState>({ name: "", colour: "#6b7280", isShared: false })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
 
@@ -61,22 +92,23 @@ export default function TagManager() {
     setTree(data)
   }
 
-  function openCreate(parentId = null) {
+  function openCreate(parentId: string | null = null) {
     setForm({ name: "", colour: "#6b7280", isShared: false, parentId })
     setDialog({ mode: "create" })
     setError("")
   }
 
-  function openEdit(tag) {
+  function openEdit(tag: TagChild | TagParent) {
     setForm({ name: tag.name, colour: tag.colour, isShared: tag.isShared })
     setDialog({ mode: "edit", tag })
     setError("")
   }
 
   async function handleSave() {
+    if (!dialog) return
     setSaving(true)
     setError("")
-    const url = dialog.mode === "edit" ? `/api/tags/${dialog.tag.id}` : "/api/tags"
+    const url = dialog.mode === "edit" ? `/api/tags/${dialog.tag!.id}` : "/api/tags"
     const method = dialog.mode === "edit" ? "PUT" : "POST"
     const res = await fetch(url, {
       method,
@@ -90,7 +122,7 @@ export default function TagManager() {
     loadTags()
   }
 
-  async function handleDelete(id) {
+  async function handleDelete(id: string) {
     if (!confirm("Delete this tag? It will be removed from any transactions that use it.")) return
     await fetch(`/api/tags/${id}`, { method: "DELETE" })
     loadTags()
@@ -197,7 +229,7 @@ export default function TagManager() {
             </div>
             <div className="space-y-1.5">
               <Label>Colour</Label>
-              <ColourPicker value={form.colour} onChange={(c) => setForm({ ...form, colour: c })} />
+              <ColourPicker value={form.colour} onChange={(c: string) => setForm({ ...form, colour: c })} />
             </div>
             <div className="flex items-center gap-2">
               <input
