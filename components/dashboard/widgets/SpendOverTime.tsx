@@ -1,6 +1,4 @@
-// "use client" required — Recharts uses browser APIs
-"use client"
-
+import { useState, useEffect } from "react"
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts"
 import WidgetContainer from "../WidgetContainer"
 import type { DashboardData } from "@/types/dashboard"
@@ -34,13 +32,20 @@ interface Props {
 }
 
 export default function SpendOverTime({ data, chartType = "bar" }: Props) {
+  const [ready, setReady] = useState(false)
+
+  useEffect(() => {
+    Promise.resolve().then(() => setReady(true))
+  }, [])
+
   const rawData = data?.spendOverTime ?? []
   const empty = rawData.length === 0
   const chartData = rawData.map(d => ({ period: d.period, amount: Math.round(d.amount * 100) / 100 }))
 
   return (
     <WidgetContainer title="Spending over time" empty={empty} insufficient={false}>
-      <div className="h-[260px]">
+      <div className="h-[260px] min-w-0">
+      {ready && (
       <ResponsiveContainer width="100%" height="100%">
         {chartType === "line" ? (
           <LineChart data={chartData} margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
@@ -67,6 +72,7 @@ export default function SpendOverTime({ data, chartType = "bar" }: Props) {
           </BarChart>
         )}
       </ResponsiveContainer>
+      )}
       </div>
     </WidgetContainer>
   )

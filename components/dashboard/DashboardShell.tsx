@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, useMemo } from "react"
+import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import Spinner from "@/components/ui/Spinner"
 import { Button } from "@/components/ui/button"
 import { getDefaultPeriod, computeDateRange, type Preset } from "@/lib/period-utils"
@@ -47,15 +47,19 @@ export default function DashboardShell() {
   const { dateFrom, dateTo, label } = periodRange ?? { dateFrom: null as Date | null, dateTo: null as Date | null, label: "" }
   const dateFromStr = dateFrom?.toISOString().slice(0, 10)
   const dateToStr = dateTo?.toISOString().slice(0, 10)
+  const lastFetchRef = useRef<string>("")
 
   useEffect(() => {
     if (!dateFromStr || !dateToStr) return
+    const currentFetchKey = `${dateFromStr}:${dateToStr}`
+    if (lastFetchRef.current === currentFetchKey) return
     
     let ignore = false
     const fetchData = async () => {
       const r = await fetch(`/api/dashboard?dateFrom=${dateFromStr}&dateTo=${dateToStr}`)
       const data = await r.json()
       if (!ignore) {
+        lastFetchRef.current = currentFetchKey
         setDashData(data)
         setLoading(false)
       }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts"
 import WidgetContainer from "../WidgetContainer"
 import type { DashboardData } from "@/types/dashboard"
@@ -34,6 +34,11 @@ interface Props {
 
 export default function SpendByTag({ data, chartType = "donut" }: Props) {
   const [drillTarget, setDrillTarget] = useState<string | null>(null)
+  const [ready, setReady] = useState(false)
+
+  useEffect(() => {
+    Promise.resolve().then(() => setReady(true))
+  }, [])
 
   const allTags = data?.spendByTag ?? []
   const empty = allTags.length === 0
@@ -65,8 +70,8 @@ export default function SpendByTag({ data, chartType = "donut" }: Props) {
           </button>
         )}
 
-        <div className="h-[240px]">
-          {chartType === "bar" ? (
+        <div className="h-[240px] min-w-0">
+          {ready && (chartType === "bar" ? (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
@@ -100,7 +105,7 @@ export default function SpendByTag({ data, chartType = "donut" }: Props) {
                 <Tooltip content={<CustomTooltip />} />
               </PieChart>
             </ResponsiveContainer>
-          )}
+          ))}
         </div>
 
         <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 shrink-0">
