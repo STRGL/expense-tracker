@@ -54,6 +54,11 @@ function AmountCell({ amount, className = "" }: { amount: number; className?: st
   )
 }
 
+function SortIcon({ field, filters }: { field: string; filters: Filters }) {
+  if (filters.sortBy !== field) return <span className="text-muted-foreground/40 ml-1">↕</span>
+  return <span className="ml-1">{filters.sortOrder === "asc" ? "↑" : "↓"}</span>
+}
+
 export default function TransactionList({ onReload: _onReload }: Props = {}) {
   const [transactions, setTransactions] = useState<TransactionListItem[]>([])
   const [total, setTotal] = useState(0)
@@ -96,7 +101,13 @@ export default function TransactionList({ onReload: _onReload }: Props = {}) {
     setSelectedIds(new Set())
   }, [filters])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    const init = async () => {
+      await Promise.resolve()
+      load()
+    }
+    init()
+  }, [load])
 
   useEffect(() => {
     fetch("/api/tags").then((r) => r.json()).then((tree: Array<FlatTag & { children: FlatTag[] }>) => {
@@ -121,11 +132,6 @@ export default function TransactionList({ onReload: _onReload }: Props = {}) {
       sortBy: field,
       sortOrder: filters.sortBy === field && filters.sortOrder === "asc" ? "desc" : "asc",
     })
-  }
-
-  function SortIcon({ field }: { field: string }) {
-    if (filters.sortBy !== field) return <span className="text-muted-foreground/40 ml-1">↕</span>
-    return <span className="ml-1">{filters.sortOrder === "asc" ? "↑" : "↓"}</span>
   }
 
   function toggleSelection(id: string) {
@@ -287,20 +293,20 @@ export default function TransactionList({ onReload: _onReload }: Props = {}) {
                     className="text-left px-3 py-2 font-medium cursor-pointer hover:text-foreground"
                     onClick={() => handleSortChange("date")}
                   >
-                    Date <SortIcon field="date" />
+                    Date <SortIcon field="date" filters={filters} />
                   </th>
                   <th
                     className="text-left px-3 py-2 font-medium cursor-pointer hover:text-foreground"
                     onClick={() => handleSortChange("merchant")}
                   >
-                    Merchant <SortIcon field="merchant" />
+                    Merchant <SortIcon field="merchant" filters={filters} />
                   </th>
                   <th className="text-left px-3 py-2 font-medium">Tag</th>
                   <th
                     className="text-right px-3 py-2 font-medium cursor-pointer hover:text-foreground"
                     onClick={() => handleSortChange("amount")}
                   >
-                    My amount <SortIcon field="amount" />
+                    My amount <SortIcon field="amount" filters={filters} />
                   </th>
                   <th className="text-right px-3 py-2 font-medium">Total</th>
                 </tr>

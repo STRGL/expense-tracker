@@ -46,13 +46,23 @@ export default function DashboardShell() {
 
   useEffect(() => {
     if (!dateFrom || !dateTo) return
-    setLoading(true)
-    const from = dateFrom.toISOString().slice(0, 10)
-    const to = dateTo.toISOString().slice(0, 10)
-    fetch(`/api/dashboard?dateFrom=${from}&dateTo=${to}`)
-      .then(r => r.json())
-      .then(data => { setDashData(data); setLoading(false) })
-  }, [period.preset, period.year, period.month, period.customFrom, period.customTo])
+    
+    let ignore = false
+    const fetchData = async () => {
+      setLoading(true)
+      const from = dateFrom.toISOString().slice(0, 10)
+      const to = dateTo.toISOString().slice(0, 10)
+      const r = await fetch(`/api/dashboard?dateFrom=${from}&dateTo=${to}`)
+      const data = await r.json()
+      if (!ignore) {
+        setDashData(data)
+        setLoading(false)
+      }
+    }
+    
+    fetchData()
+    return () => { ignore = true }
+  }, [dateFrom, dateTo])
 
   useEffect(() => {
     fetch("/api/dashboard/config").then(r => r.json()).then(setConfig)

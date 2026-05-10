@@ -88,8 +88,14 @@ export default function SearchPage() {
   }, [])
 
   useEffect(() => {
-    if (initialQ) runSearch(initialQ, filters)
-  }, [])
+    if (initialQ) {
+      const init = async () => {
+        await Promise.resolve()
+        runSearch(initialQ, filters)
+      }
+      init()
+    }
+  }, [initialQ, filters, runSearch])
 
   function handleSearch(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()

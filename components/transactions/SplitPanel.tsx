@@ -50,41 +50,51 @@ export default function SplitPanel({ totalAmount, currentUserId, onChange, initi
   }, [])
 
   useEffect(() => {
-    if (!splitting) {
-      onChange([{ userId: currentUserId, amount: totalAmount, splitMethod: "equal", tagId: null }])
-      setIsPending(false)
-      return
-    }
-    const uniqueIds = [...new Set([currentUserId, ...selectedIds])]
-    if (method === "equal" || method === "proportional") {
-      try {
-        const userObjs = uniqueIds.map((id) => {
-          const u = users.find((u) => u.id === id)
-          return { id, wage: u?.wage }
-        })
-        const result: SplitResult[] | ProportionalResult = calculateSplits(totalAmount, method, userObjs)
-        const computedSplits: SplitResult[] = Array.isArray(result) ? result : result.splits
-        const pending = Array.isArray(result) ? false : result.pendingData
+    const updateSplits = async () => {
+      if (!splitting) {
+        onChange([{ userId: currentUserId, amount: totalAmount, splitMethod: "equal", tagId: null }])
+        setIsPending(false)
+        return
+      }
+      const uniqueIds = [...new Set([currentUserId, ...selectedIds])]
+      if (method === "equal" || method === "proportional") {
+        try {
+          const userObjs = uniqueIds.map((id) => {
+            const u = users.find((u) => u.id === id)
+            return { id, wage: u?.wage }
+          })
+          const result: SplitResult[] | ProportionalResult = calculateSplits(totalAmount, method, userObjs)
+          const computedSplits: SplitResult[] = Array.isArray(result) ? result : result.splits
+          const pending = Array.isArray(result) ? false : result.pendingData
 
-        const newAmounts = Object.fromEntries(computedSplits.map((s) => [s.userId, s.amount]))
-        setAmounts(newAmounts)
-        setIsPending(pending)
-        onChange(computedSplits.map((s) => ({ userId: s.userId, amount: s.amount, splitMethod: method, tagId: null })))
-      } catch {
-        onChange([])
+          const newAmounts = Object.fromEntries(computedSplits.map((s) => [s.userId, s.amount]))
+          
+          setAmounts(prev => {
+            const changed = Object.keys(newAmounts).length !== Object.keys(prev).length ||
+              Object.keys(newAmounts).some(k => newAmounts[k] !== prev[k])
+            return changed ? newAmounts : prev
+          })
+          
+          setIsPending(pending)
+          onChange(computedSplits.map((s) => ({ userId: s.userId, amount: s.amount, splitMethod: method, tagId: null })))
+        } catch {
+          onChange([])
+          setIsPending(false)
+        }
+      } else {
+        const splits = uniqueIds.map((id) => ({
+          userId: id,
+          amount: amounts[id] ?? 0,
+          splitMethod: "specified",
+          tagId: null,
+        }))
+        onChange(splits)
         setIsPending(false)
       }
-    } else {
-      const splits = uniqueIds.map((id) => ({
-        userId: id,
-        amount: amounts[id] ?? 0,
-        splitMethod: "specified",
-        tagId: null,
-      }))
-      onChange(splits)
-      setIsPending(false)
     }
-  }, [splitting, method, selectedIds, totalAmount, users, currentUserId])
+
+    updateSplits()
+  }, [splitting, method, selectedIds, totalAmount, users, currentUserId, amounts, onChange])
 
   function toggleUser(id: string) {
     setSelectedIds((prev) =>
@@ -227,7 +237,7 @@ export default function SplitPanel({ totalAmount, currentUserId, onChange, initi
           {isPending && (
             <div className="bg-amber-50 border border-amber-200 rounded p-2 mt-2">
               <p className="text-[11px] text-amber-800 leading-tight">
-                <strong>Calculation Pending:</strong> Some users haven't set their wage. We'll notify them to update their profile so the split can be completed.
+                <strong>Calculation Pending:</strong> Some users haven&apos;t set their wage. We&apos;ll notify them to update their profile so the split can be completed.
               </p>
             </div>
           )}

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import Spinner from "@/components/ui/Spinner"
 import NotificationItem, { type NotificationData } from "./NotificationItem"
@@ -9,15 +9,19 @@ export default function NotificationList() {
   const [notifications, setNotifications] = useState<NotificationData[]>([])
   const [loading, setLoading] = useState(true)
 
-  async function load() {
+  const load = useCallback(async () => {
+    // Wrap in Promise to ensure it's not synchronous within the effect
+    await Promise.resolve()
     setLoading(true)
     const res = await fetch("/api/notifications")
     const data = await res.json()
     setNotifications(data)
     setLoading(false)
-  }
+  }, [])
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    Promise.resolve().then(() => load())
+  }, [load])
 
   async function markAllRead() {
     await fetch("/api/notifications", { method: "PUT" })

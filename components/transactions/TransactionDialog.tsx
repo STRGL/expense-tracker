@@ -120,7 +120,7 @@ export default function TransactionDialog({ transaction, onClose, onSaved }: Pro
       toast.error("Failed to load transaction. Please try again.")
       onClose()
     })
-  }, [transaction])
+  }, [transaction, onClose])
 
   async function handleTagSave() {
     if (!transaction) return

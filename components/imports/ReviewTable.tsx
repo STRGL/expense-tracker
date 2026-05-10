@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Loader2, AlertCircle, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -61,7 +61,7 @@ export default function ReviewTable({ batchId }: Props) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [confirming, setConfirming] = useState(false)
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
@@ -86,9 +86,15 @@ export default function ReviewTable({ batchId }: Props) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [batchId])
 
-  useEffect(() => { load() }, [batchId])
+  useEffect(() => {
+    const init = async () => {
+      await Promise.resolve()
+      load()
+    }
+    init()
+  }, [load])
 
   async function handleBulkTag(tagId: string | null) {
     if (!batch) return
