@@ -5,6 +5,7 @@ WORKDIR /app
 # Copy manifests and schema first so npm ci can trigger prisma generate postinstall
 COPY package*.json ./
 COPY prisma ./prisma/
+COPY prisma.config.ts ./
 
 RUN npm ci
 
@@ -12,7 +13,7 @@ RUN npm ci
 # DATABASE_URL is set to a dummy value so Prisma doesn't attempt a real
 # connection if any page accidentally runs a query at build time.
 COPY . .
-RUN DATABASE_URL="file:/tmp/build-placeholder.db" npm run build
+RUN DATABASE_URL="file:/tmp/build-placeholder.db" NODE_OPTIONS="--max-old-space-size=4096" npm run build
 
 
 # ---- Stage 2: Runner ----
