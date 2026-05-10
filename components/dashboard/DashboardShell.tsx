@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import Spinner from "@/components/ui/Spinner"
 import { Button } from "@/components/ui/button"
 import { getDefaultPeriod, computeDateRange, type Preset } from "@/lib/period-utils"
@@ -34,25 +34,26 @@ export default function DashboardShell() {
   const [locked, setLocked] = useState(true)
   const [loading, setLoading] = useState(true)
 
-  const periodRange = period.preset === "custom" && period.customFrom && period.customTo
-    ? {
-        dateFrom: new Date(period.customFrom),
-        dateTo: new Date(period.customTo + "T23:59:59"),
-        label: `${period.customFrom} – ${period.customTo}`,
-      }
-    : computeDateRange(period.preset as Preset, period.year, period.month)
+  const periodRange = useMemo(() => {
+    return period.preset === "custom" && period.customFrom && period.customTo
+      ? {
+          dateFrom: new Date(period.customFrom),
+          dateTo: new Date(period.customTo + "T23:59:59"),
+          label: `${period.customFrom} – ${period.customTo}`,
+        }
+      : computeDateRange(period.preset as Preset, period.year, period.month)
+  }, [period.preset, period.year, period.month, period.customFrom, period.customTo])
 
   const { dateFrom, dateTo, label } = periodRange ?? { dateFrom: null as Date | null, dateTo: null as Date | null, label: "" }
+  const dateFromStr = dateFrom?.toISOString().slice(0, 10)
+  const dateToStr = dateTo?.toISOString().slice(0, 10)
 
   useEffect(() => {
-    if (!dateFrom || !dateTo) return
+    if (!dateFromStr || !dateToStr) return
     
     let ignore = false
     const fetchData = async () => {
-      setLoading(true)
-      const from = dateFrom.toISOString().slice(0, 10)
-      const to = dateTo.toISOString().slice(0, 10)
-      const r = await fetch(`/api/dashboard?dateFrom=${from}&dateTo=${to}`)
+      const r = await fetch(`/api/dashboard?dateFrom=${dateFromStr}&dateTo=${dateToStr}`)
       const data = await r.json()
       if (!ignore) {
         setDashData(data)
@@ -62,7 +63,12 @@ export default function DashboardShell() {
     
     fetchData()
     return () => { ignore = true }
-  }, [dateFrom, dateTo])
+  }, [dateFromStr, dateToStr])
+
+  const handlePeriodChange = useCallback((p: DashboardPeriod) => {
+    setPeriod(p)
+    setLoading(true)
+  }, [])
 
   useEffect(() => {
     fetch("/api/dashboard/config").then(r => r.json()).then(setConfig)
@@ -93,7 +99,7 @@ export default function DashboardShell() {
           label={label}
           customFrom={period.customFrom}
           customTo={period.customTo}
-          onChange={setPeriod}
+          onChange={handlePeriodChange}
         />
         <Button
           variant={locked ? "outline" : "default"}

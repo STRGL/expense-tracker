@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { calculateSplits, type SplitResult, type ProportionalResult } from "@/lib/split-calculator"
@@ -42,6 +42,8 @@ export default function SplitPanel({ totalAmount, currentUserId, onChange, initi
     hasInitialSplit ? Object.fromEntries(initialSplits.map(s => [s.userId, Math.abs(s.amount)])) : {}
   )
   const [isPending, setIsPending] = useState(false)
+  
+  const lastSplitsRef = useRef<string>("")
 
   useEffect(() => {
     fetch("/api/users/active")
@@ -49,15 +51,23 @@ export default function SplitPanel({ totalAmount, currentUserId, onChange, initi
       .then(setUsers)
   }, [])
 
+  // 1. Automatic calculation based on method/selection
   useEffect(() => {
-    const updateSplits = async () => {
+    const update = async () => {
       if (!splitting) {
-        onChange([{ userId: currentUserId, amount: totalAmount, splitMethod: "equal", tagId: null }])
+        const splits = [{ userId: currentUserId, amount: totalAmount, splitMethod: "equal", tagId: null }]
+        const sig = JSON.stringify(splits)
+        if (sig !== lastSplitsRef.current) {
+          lastSplitsRef.current = sig
+          onChange(splits)
+        }
+        await Promise.resolve()
         setIsPending(false)
         return
       }
-      const uniqueIds = [...new Set([currentUserId, ...selectedIds])]
+
       if (method === "equal" || method === "proportional") {
+        const uniqueIds = [...new Set([currentUserId, ...selectedIds])]
         try {
           const userObjs = uniqueIds.map((id) => {
             const u = users.find((u) => u.id === id)
@@ -69,32 +79,59 @@ export default function SplitPanel({ totalAmount, currentUserId, onChange, initi
 
           const newAmounts = Object.fromEntries(computedSplits.map((s) => [s.userId, s.amount]))
           
+          // Update local amounts state if changed
           setAmounts(prev => {
             const changed = Object.keys(newAmounts).length !== Object.keys(prev).length ||
-              Object.keys(newAmounts).some(k => newAmounts[k] !== prev[k])
+              Object.keys(newAmounts).some(k => Math.abs(newAmounts[k] - prev[k]) > 0.005)
             return changed ? newAmounts : prev
           })
           
+          await Promise.resolve()
           setIsPending(pending)
-          onChange(computedSplits.map((s) => ({ userId: s.userId, amount: s.amount, splitMethod: method, tagId: null })))
+          
+          const splits = computedSplits.map((s) => ({ userId: s.userId, amount: s.amount, splitMethod: method, tagId: null }))
+          const sig = JSON.stringify(splits)
+          if (sig !== lastSplitsRef.current) {
+            lastSplitsRef.current = sig
+            onChange(splits)
+          }
         } catch {
-          onChange([])
+          const splits: Split[] = []
+          const sig = JSON.stringify(splits)
+          if (sig !== lastSplitsRef.current) {
+            lastSplitsRef.current = sig
+            onChange(splits)
+          }
+          await Promise.resolve()
           setIsPending(false)
         }
-      } else {
+      }
+    }
+    update()
+  }, [splitting, method, selectedIds, totalAmount, users, currentUserId, onChange])
+
+  // 2. Manual calculation for "specified" method
+  useEffect(() => {
+    const update = async () => {
+      if (splitting && method === "specified") {
+        const uniqueIds = [...new Set([currentUserId, ...selectedIds])]
         const splits = uniqueIds.map((id) => ({
           userId: id,
           amount: amounts[id] ?? 0,
           splitMethod: "specified",
           tagId: null,
         }))
-        onChange(splits)
+        const sig = JSON.stringify(splits)
+        if (sig !== lastSplitsRef.current) {
+          lastSplitsRef.current = sig
+          onChange(splits)
+        }
+        await Promise.resolve()
         setIsPending(false)
       }
     }
-
-    updateSplits()
-  }, [splitting, method, selectedIds, totalAmount, users, currentUserId, amounts, onChange])
+    update()
+  }, [splitting, method, selectedIds, amounts, currentUserId, onChange])
 
   function toggleUser(id: string) {
     setSelectedIds((prev) =>
