@@ -5,6 +5,8 @@ export default auth((req) => {
   const { pathname } = req.nextUrl
   const isAuthenticated = !!req.auth
 
+  console.log(`Middleware: ${req.method} ${pathname}, authenticated: ${isAuthenticated}`)
+
   // Always allow: login page, setup page, auth API, setup API
   if (
     pathname === "/login" ||
