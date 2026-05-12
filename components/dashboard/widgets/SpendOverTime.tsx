@@ -35,7 +35,8 @@ export default function SpendOverTime({ data, chartType = "bar" }: Props) {
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
-    Promise.resolve().then(() => setReady(true))
+    const timer = setTimeout(() => setReady(true), 100)
+    return () => clearTimeout(timer)
   }, [])
 
   const rawData = data?.spendOverTime ?? []
@@ -44,9 +45,9 @@ export default function SpendOverTime({ data, chartType = "bar" }: Props) {
 
   return (
     <WidgetContainer title="Spending over time" empty={empty} insufficient={false}>
-      <div className="h-[260px] min-w-0">
+      <div className="h-[260px] w-full min-w-0">
       {ready && (
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="100%" height="100%" minWidth={0} debounce={1}>
         {chartType === "line" ? (
           <LineChart data={chartData} margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />

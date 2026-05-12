@@ -37,7 +37,8 @@ export default function SpendByTag({ data, chartType = "donut" }: Props) {
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
-    Promise.resolve().then(() => setReady(true))
+    const timer = setTimeout(() => setReady(true), 100)
+    return () => clearTimeout(timer)
   }, [])
 
   const allTags = data?.spendByTag ?? []
@@ -70,9 +71,9 @@ export default function SpendByTag({ data, chartType = "donut" }: Props) {
           </button>
         )}
 
-        <div className="h-[240px] min-w-0">
+        <div className="h-[240px] w-full min-w-0">
           {ready && (chartType === "bar" ? (
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} debounce={1}>
               <BarChart data={chartData} margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} axisLine={false} tickLine={false} />
@@ -86,7 +87,7 @@ export default function SpendByTag({ data, chartType = "donut" }: Props) {
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} debounce={1}>
               <PieChart>
                 <Pie
                   data={chartData}
