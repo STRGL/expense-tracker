@@ -3,10 +3,14 @@ import Credentials from "next-auth/providers/credentials"
 import { prisma } from "@/lib/prisma"
 import { validatePassword } from "@/lib/auth-utils"
 
+if (!process.env.AUTH_SECRET && process.env.NODE_ENV === "production") {
+  throw new Error("AUTH_SECRET environment variable is required in production")
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  debug: true,
+  debug: process.env.NODE_ENV !== "production",
   trustHost: true,
-  secret: process.env.AUTH_SECRET || "fallback-secret-for-dev",
+  secret: process.env.AUTH_SECRET ?? "dev-only-insecure-secret-do-not-use-in-production",
   session: {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60,
@@ -14,29 +18,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     Credentials({
       async authorize(credentials) {
-        console.log("Authorize attempt for:", credentials?.email)
         if (!credentials?.email || !credentials?.password) return null
 
         const user = await prisma.user.findUnique({
           where: { email: String(credentials.email).toLowerCase() },
         })
 
-        if (!user || !user.isActive) {
-          console.log("User not found or inactive:", credentials?.email)
-          return null
-        }
+        if (!user || !user.isActive) return null
 
         const valid = await validatePassword(
           String(credentials.password),
           user.passwordHash
         )
 
-        if (!valid) {
-          console.log("Invalid password for:", credentials?.email)
-          return null
-        }
+        if (!valid) return null
 
-        console.log("Authorize success for:", credentials?.email)
         return { id: user.id, email: user.email, name: user.name, role: user.role }
       },
     }),

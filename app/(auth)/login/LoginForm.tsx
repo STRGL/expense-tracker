@@ -25,8 +25,6 @@ export default function LoginForm() {
       redirect: false,
     })
 
-    console.log("Sign-in result:", result)
-
     setLoading(false)
 
     if (result?.error) {
