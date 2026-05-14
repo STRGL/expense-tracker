@@ -50,6 +50,20 @@ describe("parseDate", () => {
     expect(d!.toISOString()).toBe("2026-03-15T00:00:00.000Z")
   })
 
+  it("returns UTC midnight even for BST-summer dates that would shift under local TZ", () => {
+    // On a Europe/London host, `new Date(2026, 5, 15)` (June 15) is BST = UTC+1, so
+    // local midnight = 2026-06-14T23:00:00.000Z. UTC midnight is 2026-06-15T00:00:00.000Z.
+    // This test fails if parseDate ever regresses to local-TZ Date construction.
+    const dmy = parseDate("15/06/2026", "DD/MM/YYYY")
+    expect(dmy!.toISOString()).toBe("2026-06-15T00:00:00.000Z")
+
+    const mdy = parseDate("06/15/2026", "MM/DD/YYYY")
+    expect(mdy!.toISOString()).toBe("2026-06-15T00:00:00.000Z")
+
+    const iso = parseDate("2026-06-15", "YYYY-MM-DD")
+    expect(iso!.toISOString()).toBe("2026-06-15T00:00:00.000Z")
+  })
+
   it("returns null for invalid date string", () => {
     expect(parseDate("not-a-date", "DD/MM/YYYY")).toBeNull()
   })
