@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/api-helpers"
+import { parseCalendarDate } from "@/lib/date"
 
 export const dynamic = "force-dynamic"
 
@@ -17,8 +18,8 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "dateFrom and dateTo are required" }, { status: 400 })
   }
 
-  const dateFrom = new Date(dateFromStr)
-  const dateTo = new Date(dateToStr)
+  const dateFrom = parseCalendarDate(dateFromStr)
+  const dateTo = parseCalendarDate(dateToStr)
 
   const duration = dateTo.getTime() - dateFrom.getTime()
   const prevDateFrom = new Date(dateFrom.getTime() - duration - 1)

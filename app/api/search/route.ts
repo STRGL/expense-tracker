@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/api-helpers"
+import { parseCalendarDate } from "@/lib/date"
 
 export const dynamic = "force-dynamic"
 
@@ -58,8 +59,8 @@ export async function GET(request: Request) {
                                       AND ts.status = 'active'
         LEFT JOIN "Tag"         AS tag ON tag.id = ts.tagId
         WHERE "TransactionFts" MATCH ${ftsQuery}
-          ${dateFrom ? Prisma.sql`AND t.date >= ${new Date(dateFrom)}` : Prisma.empty}
-          ${dateTo   ? Prisma.sql`AND t.date <= ${new Date(dateTo)}`   : Prisma.empty}
+          ${dateFrom ? Prisma.sql`AND t.date >= ${parseCalendarDate(dateFrom)}` : Prisma.empty}
+          ${dateTo   ? Prisma.sql`AND t.date <= ${parseCalendarDate(dateTo)}`   : Prisma.empty}
           ${tagId    ? Prisma.sql`AND ts.tagId = ${tagId}`             : Prisma.empty}
           ${minAmount ? Prisma.sql`AND ts.amount >= ${Number(minAmount)}` : Prisma.empty}
           ${maxAmount ? Prisma.sql`AND ts.amount <= ${Number(maxAmount)}` : Prisma.empty}
