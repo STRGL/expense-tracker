@@ -10,10 +10,16 @@ COPY prisma.config.ts ./
 RUN npm ci
 
 # Copy source and build
-# DATABASE_URL is set to a dummy value so Prisma doesn't attempt a real
-# connection if any page accidentally runs a query at build time.
+# DATABASE_URL and AUTH_SECRET are placeholder values: Next.js evaluates
+# auth.ts at build time (page-data collection) and asserts AUTH_SECRET is
+# set in production, and Prisma would attempt a real connection if any
+# page accidentally ran a query. The real values come from the runtime
+# environment in the runner stage.
 COPY . .
-RUN DATABASE_URL="file:/tmp/build-placeholder.db" NODE_OPTIONS="--max-old-space-size=4096" npm run build
+RUN DATABASE_URL="file:/tmp/build-placeholder.db" \
+    AUTH_SECRET="build-placeholder-secret-not-used-at-runtime" \
+    NODE_OPTIONS="--max-old-space-size=4096" \
+    npm run build
 
 
 # ---- Stage 2: Runner ----
