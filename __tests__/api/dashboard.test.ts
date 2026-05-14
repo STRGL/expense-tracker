@@ -132,6 +132,28 @@ describe("GET /api/dashboard", () => {
     expect(call.where.transaction.isSystemLine).toBe(false)
     expect(call.where.transaction.OR).toBeDefined()
   })
+
+  it("orders topTransactions by absolute amount and preserves signed myAmount", async () => {
+    auth.mockResolvedValue(session)
+    const splits = [
+      makeSplit(50, null, null, "SmallCredit", "2026-04-02"),
+      makeSplit(-200, null, null, "BigExpense", "2026-04-03"),
+      makeSplit(-30, null, null, "SmallExpense", "2026-04-04"),
+      makeSplit(150, null, null, "MediumCredit", "2026-04-05"),
+    ]
+    prisma.transactionSplit.findMany.mockResolvedValueOnce(splits).mockResolvedValueOnce([])
+    const req = new Request("http://localhost/api/dashboard?dateFrom=2026-04-01&dateTo=2026-04-30")
+    const res = await GET(req)
+    const body = await res.json()
+    expect(body.topTransactions.map((t: { merchantName: string }) => t.merchantName)).toEqual([
+      "BigExpense",
+      "MediumCredit",
+      "SmallCredit",
+      "SmallExpense",
+    ])
+    expect(body.topTransactions[0].myAmount).toBe(-200)
+    expect(body.topTransactions[1].myAmount).toBe(150)
+  })
 })
 
 describe("GET /api/dashboard/config", () => {
