@@ -59,7 +59,10 @@ const mockSplit = {
 }
 
 describe("GET /api/transactions", () => {
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => {
+    jest.clearAllMocks()
+    prisma.user.findUnique.mockResolvedValue({ id: "u1", role: "user" })
+  })
 
   it("returns 401 when not authenticated", async () => {
     auth.mockResolvedValue(null)
@@ -97,7 +100,10 @@ describe("GET /api/transactions", () => {
 })
 
 describe("POST /api/transactions", () => {
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => {
+    jest.clearAllMocks()
+    prisma.user.findUnique.mockResolvedValue({ id: "u1", role: "user" })
+  })
 
   it("returns 401 when not authenticated", async () => {
     auth.mockResolvedValue(null)
@@ -164,7 +170,10 @@ describe("POST /api/transactions", () => {
 })
 
 describe("GET /api/transactions/[id]", () => {
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => {
+    jest.clearAllMocks()
+    prisma.user.findUnique.mockResolvedValue({ id: "u1", role: "user" })
+  })
 
   it("returns 401 when not authenticated", async () => {
     auth.mockResolvedValue(null)
@@ -195,7 +204,10 @@ describe("GET /api/transactions/[id]", () => {
 })
 
 describe("PUT /api/transactions/[id]", () => {
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => {
+    jest.clearAllMocks()
+    prisma.user.findUnique.mockResolvedValue({ id: "u1", role: "user" })
+  })
 
   it("returns 403 when user is not the owner", async () => {
     auth.mockResolvedValue(session)
@@ -215,7 +227,10 @@ describe("PUT /api/transactions/[id]", () => {
 })
 
 describe("DELETE /api/transactions/[id]", () => {
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => {
+    jest.clearAllMocks()
+    prisma.user.findUnique.mockResolvedValue({ id: "u1", role: "user" })
+  })
 
   it("returns 403 when user is not the owner", async () => {
     auth.mockResolvedValue(session)
@@ -231,7 +246,10 @@ describe("DELETE /api/transactions/[id]", () => {
 })
 
 describe("GET /api/transactions/[id] — paymentFromUserId", () => {
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => {
+    jest.clearAllMocks()
+    prisma.user.findUnique.mockResolvedValue({ id: "u1", role: "user" })
+  })
 
   it("includes paymentFromUserId and paymentFrom in response", async () => {
     auth.mockResolvedValue(session)
@@ -259,7 +277,10 @@ describe("GET /api/transactions/[id] — paymentFromUserId", () => {
 })
 
 describe("PUT /api/transactions/[id] — paymentFromUserId", () => {
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => {
+    jest.clearAllMocks()
+    prisma.user.findUnique.mockResolvedValue({ id: "u1", role: "user" })
+  })
 
   it("saves paymentFromUserId when provided", async () => {
     auth.mockResolvedValue(session)
@@ -331,7 +352,10 @@ describe("PUT /api/transactions/[id] — paymentFromUserId", () => {
 })
 
 describe("PUT /api/transactions/[id]/my-split", () => {
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => {
+    jest.clearAllMocks()
+    prisma.user.findUnique.mockResolvedValue({ id: "u1", role: "user" })
+  })
 
   it("returns 404 when user has no active split", async () => {
     auth.mockResolvedValue(session)
@@ -363,7 +387,10 @@ describe("PUT /api/transactions/[id]/my-split", () => {
 })
 
 describe("PUT /api/transactions/[id] — system line recalculation", () => {
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => {
+    jest.clearAllMocks()
+    prisma.user.findUnique.mockResolvedValue({ id: "u1", role: "user" })
+  })
 
   it("calls upsertSystemLine when child amount changes", async () => {
     auth.mockResolvedValue(session)
@@ -426,7 +453,10 @@ describe("PUT /api/transactions/[id] — system line recalculation", () => {
 })
 
 describe("GET /api/transactions/[id] — children", () => {
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => {
+    jest.clearAllMocks()
+    prisma.user.findUnique.mockResolvedValue({ id: "u1", role: "user" })
+  })
 
   it("returns children and systemLine in response", async () => {
     auth.mockResolvedValue(session)
@@ -466,7 +496,10 @@ describe("GET /api/transactions/[id] — children", () => {
 })
 
 describe("POST /api/transactions — child creation", () => {
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => {
+    jest.clearAllMocks()
+    prisma.user.findUnique.mockResolvedValue({ id: "u1", role: "user" })
+  })
 
   it("returns 404 when parent not found", async () => {
     auth.mockResolvedValue(session)
@@ -582,7 +615,10 @@ describe("POST /api/transactions — child creation", () => {
 })
 
 describe("DELETE /api/transactions/[id] — soft hide", () => {
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => {
+    jest.clearAllMocks()
+    prisma.user.findUnique.mockResolvedValue({ id: "u1", role: "user" })
+  })
 
   const mockTxBase = {
     id: "tx1",

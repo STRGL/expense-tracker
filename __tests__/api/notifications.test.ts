@@ -17,6 +17,7 @@ jest.mock("@/lib/prisma", () => ({
     splitSuggestion: {
       findFirst: jest.fn(),
     },
+    user: { findUnique: jest.fn() },
   },
 }))
 
@@ -25,7 +26,10 @@ const { prisma } = require("@/lib/prisma")
 const session = { user: { id: "u1", role: "user" } }
 
 describe("GET /api/notifications", () => {
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => {
+    jest.clearAllMocks()
+    prisma.user.findUnique.mockResolvedValue({ id: "u1", role: "user" })
+  })
 
   it("returns 401 when not authenticated", async () => {
     auth.mockResolvedValue(null)
@@ -48,7 +52,10 @@ describe("GET /api/notifications", () => {
 })
 
 describe("PUT /api/notifications (mark all read)", () => {
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => {
+    jest.clearAllMocks()
+    prisma.user.findUnique.mockResolvedValue({ id: "u1", role: "user" })
+  })
 
   it("returns 401 when not authenticated", async () => {
     auth.mockResolvedValue(null)
@@ -68,7 +75,10 @@ describe("PUT /api/notifications (mark all read)", () => {
 })
 
 describe("GET /api/notifications/count", () => {
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => {
+    jest.clearAllMocks()
+    prisma.user.findUnique.mockResolvedValue({ id: "u1", role: "user" })
+  })
 
   it("returns 401 when not authenticated", async () => {
     auth.mockResolvedValue(null)
@@ -87,7 +97,10 @@ describe("GET /api/notifications/count", () => {
 })
 
 describe("PUT /api/notifications/[id] (mark one read)", () => {
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => {
+    jest.clearAllMocks()
+    prisma.user.findUnique.mockResolvedValue({ id: "u1", role: "user" })
+  })
 
   it("marks the notification as read", async () => {
     auth.mockResolvedValue(session)

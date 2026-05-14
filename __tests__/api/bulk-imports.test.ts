@@ -8,6 +8,7 @@ jest.mock("@/lib/prisma", () => ({
   prisma: {
     importBatch: { findUnique: jest.fn() },
     importRow: { updateMany: jest.fn() },
+    user: { findUnique: jest.fn() },
   },
 }))
 
@@ -16,7 +17,10 @@ const { prisma } = require("@/lib/prisma")
 const session = { user: { id: "u1", role: "user" } }
 
 describe("Bulk Import Row APIs", () => {
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => {
+    jest.clearAllMocks()
+    prisma.user.findUnique.mockResolvedValue({ id: "u1", role: "user" })
+  })
 
   describe("PUT /api/imports/[id]/rows/bulk", () => {
     it("updates multiple rows with new tag", async () => {

@@ -14,6 +14,7 @@ jest.mock("@/lib/prisma", () => ({
       update: jest.fn(),
       delete: jest.fn(),
     },
+    user: { findUnique: jest.fn() },
   },
 }))
 
@@ -27,7 +28,10 @@ const flatTags = [
 ]
 
 describe("GET /api/tags", () => {
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => {
+    jest.clearAllMocks()
+    prisma.user.findUnique.mockResolvedValue({ id: "u1", role: "user" })
+  })
 
   it("returns 401 when not authenticated", async () => {
     auth.mockResolvedValue(null)
@@ -48,7 +52,10 @@ describe("GET /api/tags", () => {
 })
 
 describe("POST /api/tags", () => {
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => {
+    jest.clearAllMocks()
+    prisma.user.findUnique.mockResolvedValue({ id: "u1", role: "user" })
+  })
 
   it("returns 400 when name is missing", async () => {
     auth.mockResolvedValue(session)
@@ -90,7 +97,10 @@ describe("POST /api/tags", () => {
 })
 
 describe("PUT /api/tags/[id]", () => {
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => {
+    jest.clearAllMocks()
+    prisma.user.findUnique.mockResolvedValue({ id: "u1", role: "user" })
+  })
 
   it("returns 403 when user does not own the tag", async () => {
     auth.mockResolvedValue(session)
@@ -119,7 +129,10 @@ describe("PUT /api/tags/[id]", () => {
 })
 
 describe("DELETE /api/tags/[id]", () => {
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => {
+    jest.clearAllMocks()
+    prisma.user.findUnique.mockResolvedValue({ id: "u1", role: "user" })
+  })
 
   it("returns 403 when user does not own the tag", async () => {
     auth.mockResolvedValue(session)

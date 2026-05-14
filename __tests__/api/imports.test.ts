@@ -11,6 +11,7 @@ jest.mock("@/lib/prisma", () => ({
     transaction: { findMany: jest.fn().mockResolvedValue([]) },
     importBatch: { findUnique: jest.fn(), update: jest.fn(), create: jest.fn() },
     importRow: { findUnique: jest.fn(), update: jest.fn(), findMany: jest.fn(), create: jest.fn() },
+    user: { findUnique: jest.fn() },
     $transaction: jest.fn(),
   },
 }))
@@ -47,7 +48,10 @@ function makeTransactionMock() {
 }
 
 describe("POST /api/imports", () => {
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => {
+    jest.clearAllMocks()
+    prisma.user.findUnique.mockResolvedValue({ id: "u1", role: "user" })
+  })
 
   it("returns 401 when not authenticated", async () => {
     auth.mockResolvedValue(null)
@@ -171,7 +175,10 @@ describe("POST /api/imports", () => {
 })
 
 describe("GET /api/imports/[id]", () => {
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => {
+    jest.clearAllMocks()
+    prisma.user.findUnique.mockResolvedValue({ id: "u1", role: "user" })
+  })
 
   it("returns the batch with its rows", async () => {
     auth.mockResolvedValue(session)

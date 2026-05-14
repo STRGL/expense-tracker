@@ -7,6 +7,7 @@ jest.mock("@/auth", () => ({ auth: jest.fn() }))
 jest.mock("@/lib/prisma", () => ({
   prisma: {
     $queryRaw: jest.fn(),
+    user: { findUnique: jest.fn() },
   },
 }))
 
@@ -15,7 +16,10 @@ const { prisma } = require("@/lib/prisma")
 const session = { user: { id: "u1", role: "user" } }
 
 describe("GET /api/search", () => {
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => {
+    jest.clearAllMocks()
+    prisma.user.findUnique.mockResolvedValue({ id: "u1", role: "user" })
+  })
 
   it("returns 401 when not authenticated", async () => {
     auth.mockResolvedValue(null)

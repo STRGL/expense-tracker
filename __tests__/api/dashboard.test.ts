@@ -24,7 +24,10 @@ const makeSplit = (amount: number, tagName: string | null, tagColour: string | n
 })
 
 describe("GET /api/dashboard", () => {
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => {
+    jest.clearAllMocks()
+    prisma.user.findUnique.mockResolvedValue({ id: "u1", role: "user" })
+  })
 
   it("returns 401 when not authenticated", async () => {
     auth.mockResolvedValue(null)
@@ -132,7 +135,10 @@ describe("GET /api/dashboard", () => {
 })
 
 describe("GET /api/dashboard/config", () => {
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => {
+    jest.clearAllMocks()
+    prisma.user.findUnique.mockResolvedValue({ id: "u1", role: "user" })
+  })
 
   it("returns 401 when not authenticated", async () => {
     auth.mockResolvedValue(null)
@@ -162,7 +168,10 @@ describe("GET /api/dashboard/config", () => {
 })
 
 describe("PUT /api/dashboard/config", () => {
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => {
+    jest.clearAllMocks()
+    prisma.user.findUnique.mockResolvedValue({ id: "u1", role: "user" })
+  })
 
   it("saves config and returns success", async () => {
     auth.mockResolvedValue(session)

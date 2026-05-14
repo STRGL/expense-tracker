@@ -14,6 +14,7 @@ jest.mock("@/lib/prisma", () => ({
       update: jest.fn(),
       delete: jest.fn(),
     },
+    user: { findUnique: jest.fn() },
   },
 }))
 
@@ -22,7 +23,10 @@ const { prisma } = require("@/lib/prisma")
 const session = { user: { id: "u1", role: "user" } }
 
 describe("GET /api/aliases", () => {
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => {
+    jest.clearAllMocks()
+    prisma.user.findUnique.mockResolvedValue({ id: "u1", role: "user" })
+  })
   it("returns 401 when not authenticated", async () => {
     auth.mockResolvedValue(null)
     const res = await GET()
@@ -42,7 +46,10 @@ describe("GET /api/aliases", () => {
 })
 
 describe("POST /api/aliases", () => {
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => {
+    jest.clearAllMocks()
+    prisma.user.findUnique.mockResolvedValue({ id: "u1", role: "user" })
+  })
   it("returns 400 when rawName or niceName is missing", async () => {
     auth.mockResolvedValue(session)
     const req = new Request("http://localhost/api/aliases", {
@@ -67,7 +74,10 @@ describe("POST /api/aliases", () => {
 })
 
 describe("PUT /api/aliases/[id]", () => {
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => {
+    jest.clearAllMocks()
+    prisma.user.findUnique.mockResolvedValue({ id: "u1", role: "user" })
+  })
   it("returns 403 when user does not own the alias", async () => {
     auth.mockResolvedValue(session)
     prisma.merchantAlias.findUnique.mockResolvedValue({ id: "a1", createdById: "other" })
@@ -94,7 +104,10 @@ describe("PUT /api/aliases/[id]", () => {
 })
 
 describe("DELETE /api/aliases/[id]", () => {
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => {
+    jest.clearAllMocks()
+    prisma.user.findUnique.mockResolvedValue({ id: "u1", role: "user" })
+  })
   it("deletes alias when owner", async () => {
     auth.mockResolvedValue(session)
     prisma.merchantAlias.findUnique.mockResolvedValue({ id: "a1", createdById: "u1" })

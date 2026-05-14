@@ -10,6 +10,7 @@ jest.mock("@/lib/prisma", () => ({
     transaction: { findUnique: jest.fn() },
     splitSuggestion: { findUnique: jest.fn(), update: jest.fn() },
     transactionSplit: { findFirst: jest.fn(), update: jest.fn() },
+    user: { findUnique: jest.fn() },
     $transaction: jest.fn(),
   },
 }))
@@ -20,7 +21,10 @@ const session = { user: { id: "u1", role: "user" } }
 const ownerSession = { user: { id: "owner1", role: "user" } }
 
 describe("POST /api/transactions/[id]/suggestions", () => {
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => {
+    jest.clearAllMocks()
+    prisma.user.findUnique.mockResolvedValue({ id: "u1", role: "user" })
+  })
 
   it("returns 401 when not authenticated", async () => {
     auth.mockResolvedValue(null)
@@ -78,7 +82,10 @@ describe("POST /api/transactions/[id]/suggestions", () => {
 })
 
 describe("PUT /api/transactions/[id]/suggestions/[suggestionId]", () => {
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => {
+    jest.clearAllMocks()
+    prisma.user.findUnique.mockResolvedValue({ id: "u1", role: "user" })
+  })
 
   it("returns 400 for invalid action", async () => {
     auth.mockResolvedValue(ownerSession)

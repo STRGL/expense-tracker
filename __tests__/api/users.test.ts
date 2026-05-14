@@ -37,11 +37,13 @@ describe("GET /api/users (admin only)", () => {
   })
   it("returns 403 for non-admin users", async () => {
     auth.mockResolvedValue(userSession)
+    prisma.user.findUnique.mockResolvedValueOnce({ id: "u1", role: "user" })
     const res = await GET()
     expect(res.status).toBe(403)
   })
   it("returns all users for admin", async () => {
     auth.mockResolvedValue(adminSession)
+    prisma.user.findUnique.mockResolvedValueOnce({ id: "admin1", role: "admin" })
     prisma.user.findMany.mockResolvedValue([
       { id: "u1", name: "Alice", email: "alice@test.com", role: "user", isActive: true },
     ])
@@ -56,6 +58,7 @@ describe("POST /api/users (admin only)", () => {
   beforeEach(() => jest.clearAllMocks())
   it("returns 403 for non-admin users", async () => {
     auth.mockResolvedValue(userSession)
+    prisma.user.findUnique.mockResolvedValueOnce({ id: "u1", role: "user" })
     const req = new Request("http://localhost/api/users", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -66,6 +69,7 @@ describe("POST /api/users (admin only)", () => {
   })
   it("returns 409 when email already in use", async () => {
     auth.mockResolvedValue(adminSession)
+    prisma.user.findUnique.mockResolvedValueOnce({ id: "admin1", role: "admin" })
     prisma.user.findUnique.mockResolvedValue({ id: "existing" })
     const req = new Request("http://localhost/api/users", {
       method: "POST",
@@ -77,6 +81,7 @@ describe("POST /api/users (admin only)", () => {
   })
   it("creates a user and returns 201 for admin", async () => {
     auth.mockResolvedValue(adminSession)
+    prisma.user.findUnique.mockResolvedValueOnce({ id: "admin1", role: "admin" })
     prisma.user.findUnique.mockResolvedValue(null)
     const mockCreated = { id: "u2", name: "Bob", email: "bob@test.com", role: "user", isActive: true }
     prisma.$transaction.mockImplementation(async (cb: (tx: typeof prisma) => Promise<unknown>) => cb({
@@ -97,6 +102,7 @@ describe("PUT /api/users/[id] (admin only)", () => {
   beforeEach(() => jest.clearAllMocks())
   it("updates user details", async () => {
     auth.mockResolvedValue(adminSession)
+    prisma.user.findUnique.mockResolvedValueOnce({ id: "admin1", role: "admin" })
     prisma.user.update.mockResolvedValue({ id: "u1", name: "Updated", email: "a@test.com", role: "user", isActive: true })
     const req = new Request("http://localhost/api/users/u1", {
       method: "PUT",
@@ -112,6 +118,7 @@ describe("DELETE /api/users/[id] (admin only — deactivates)", () => {
   beforeEach(() => jest.clearAllMocks())
   it("deactivates user (sets isActive false)", async () => {
     auth.mockResolvedValue(adminSession)
+    prisma.user.findUnique.mockResolvedValueOnce({ id: "admin1", role: "admin" })
     prisma.user.update.mockResolvedValue({ id: "u1", isActive: false })
     const req = new Request("http://localhost/api/users/u1", { method: "DELETE" })
     const res = await DELETE(req, { params: Promise.resolve({ id: "u1" }) })
@@ -126,6 +133,7 @@ describe("PUT /api/users/[id]/password (admin only)", () => {
   beforeEach(() => jest.clearAllMocks())
   it("resets password", async () => {
     auth.mockResolvedValue(adminSession)
+    prisma.user.findUnique.mockResolvedValueOnce({ id: "admin1", role: "admin" })
     prisma.user.update.mockResolvedValue({ id: "u1" })
     const req = new Request("http://localhost/api/users/u1/password", {
       method: "PUT",

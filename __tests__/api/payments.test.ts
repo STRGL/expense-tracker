@@ -18,7 +18,10 @@ const { prisma } = require("@/lib/prisma")
 const session = { user: { id: "u1", role: "user" } }
 
 describe("GET /api/payments", () => {
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => {
+    jest.clearAllMocks()
+    prisma.user.findUnique.mockResolvedValue({ id: "u1", role: "user" })
+  })
 
   it("returns 401 when not authenticated", async () => {
     auth.mockResolvedValue(null)
@@ -73,7 +76,10 @@ describe("GET /api/payments", () => {
 })
 
 describe("GET /api/payments/[userId]", () => {
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => {
+    jest.clearAllMocks()
+    prisma.user.findUnique.mockResolvedValue({ id: "u1", role: "user" })
+  })
 
   it("returns 401 when not authenticated", async () => {
     auth.mockResolvedValue(null)

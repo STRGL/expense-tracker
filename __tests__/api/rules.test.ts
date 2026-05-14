@@ -14,6 +14,7 @@ jest.mock("@/lib/prisma", () => ({
       update: jest.fn(),
       delete: jest.fn(),
     },
+    user: { findUnique: jest.fn() },
   },
 }))
 
@@ -22,7 +23,10 @@ const { prisma } = require("@/lib/prisma")
 const session = { user: { id: "u1", role: "user" } }
 
 describe("GET /api/rules", () => {
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => {
+    jest.clearAllMocks()
+    prisma.user.findUnique.mockResolvedValue({ id: "u1", role: "user" })
+  })
   it("returns 401 when not authenticated", async () => {
     auth.mockResolvedValue(null)
     const res = await GET()
@@ -41,7 +45,10 @@ describe("GET /api/rules", () => {
 })
 
 describe("POST /api/rules", () => {
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => {
+    jest.clearAllMocks()
+    prisma.user.findUnique.mockResolvedValue({ id: "u1", role: "user" })
+  })
   it("returns 400 when merchantPattern or tagId is missing", async () => {
     auth.mockResolvedValue(session)
     const req = new Request("http://localhost/api/rules", {
@@ -66,7 +73,10 @@ describe("POST /api/rules", () => {
 })
 
 describe("DELETE /api/rules/[id]", () => {
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => {
+    jest.clearAllMocks()
+    prisma.user.findUnique.mockResolvedValue({ id: "u1", role: "user" })
+  })
   it("returns 403 when user does not own the rule", async () => {
     auth.mockResolvedValue(session)
     prisma.importRule.findUnique.mockResolvedValue({ id: "r1", createdById: "other" })

@@ -13,6 +13,7 @@ jest.mock("@/lib/prisma", () => ({
     },
     splitSuggestion: { deleteMany: jest.fn() },
     transaction: { delete: jest.fn() },
+    user: { findUnique: jest.fn() },
     $transaction: jest.fn(),
   },
 }))
@@ -22,7 +23,10 @@ const { prisma } = require("@/lib/prisma")
 const session = { user: { id: "u1", role: "user" } }
 
 describe("DELETE /api/transactions/[id]/my-view", () => {
-  beforeEach(() => jest.clearAllMocks())
+  beforeEach(() => {
+    jest.clearAllMocks()
+    prisma.user.findUnique.mockResolvedValue({ id: "u1", role: "user" })
+  })
 
   it("returns 401 when not authenticated", async () => {
     auth.mockResolvedValue(null)
