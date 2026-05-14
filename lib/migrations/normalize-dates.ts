@@ -65,7 +65,7 @@ export async function migrateDates(prisma: PrismaClient): Promise<MigrationResul
     }
 
     await tx.appliedDataMigration.create({ data: { name: MIGRATION_NAME } })
-  })
+  }, { timeout: 60_000, maxWait: 10_000 })
 
   return { importRowsUpdated, transactionsUpdated }
 }
