@@ -26,7 +26,7 @@ describe("GET /api/users/active", () => {
     expect(res.status).toBe(401)
   })
 
-  it("returns id, name, and hasWage flag — never the wage value", async () => {
+  it("returns id, name, and wage for active users", async () => {
     auth.mockResolvedValue(session)
     prisma.user.findMany.mockResolvedValue([
       { id: "u1", name: "Alice", wage: 50000 },
@@ -36,10 +36,8 @@ describe("GET /api/users/active", () => {
     const body = await res.json()
     expect(res.status).toBe(200)
     expect(body).toEqual([
-      { id: "u1", name: "Alice", hasWage: true },
-      { id: "u2", name: "Bob", hasWage: false },
+      { id: "u1", name: "Alice", wage: 50000 },
+      { id: "u2", name: "Bob", wage: null },
     ])
-    expect(body[0]).not.toHaveProperty("wage")
-    expect(body[1]).not.toHaveProperty("wage")
   })
 })

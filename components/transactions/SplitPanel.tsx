@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { calculateSplits, type SplitResult } from "@/lib/split-calculator"
+import { calculateSplits, type SplitResult, type ProportionalResult } from "@/lib/split-calculator"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 type SplitMethod = "equal" | "proportional" | "specified"
@@ -18,7 +18,7 @@ export interface Split {
 interface ActiveUser {
   id: string
   name: string
-  hasWage: boolean
+  wage?: number | null
 }
 
 interface Props {
@@ -66,12 +66,18 @@ export default function SplitPanel({ totalAmount, currentUserId, onChange, initi
         return
       }
 
-      if (method === "equal") {
+      if (method === "equal" || method === "proportional") {
         const uniqueIds = [...new Set([currentUserId, ...selectedIds])]
         try {
-          const userObjs = uniqueIds.map(id => ({ id }))
-          const result = calculateSplits(totalAmount, "equal", userObjs) as SplitResult[]
-          const newAmounts = Object.fromEntries(result.map(s => [s.userId, s.amount]))
+          const userObjs = uniqueIds.map(id => {
+            const u = users.find(u => u.id === id)
+            return { id, wage: u?.wage }
+          })
+          const result: SplitResult[] | ProportionalResult = calculateSplits(totalAmount, method, userObjs)
+          const computedSplits: SplitResult[] = Array.isArray(result) ? result : result.splits
+          const pending = Array.isArray(result) ? false : result.pendingData
+
+          const newAmounts = Object.fromEntries(computedSplits.map(s => [s.userId, s.amount]))
 
           setAmounts(prev => {
             const changed = Object.keys(newAmounts).length !== Object.keys(prev).length ||
@@ -80,9 +86,9 @@ export default function SplitPanel({ totalAmount, currentUserId, onChange, initi
           })
 
           await Promise.resolve()
-          setIsPending(false)
+          setIsPending(pending)
 
-          const splits = result.map(s => ({ userId: s.userId, amount: s.amount, splitMethod: "equal", tagId: null }))
+          const splits = computedSplits.map(s => ({ userId: s.userId, amount: s.amount, splitMethod: method, tagId: null }))
           const sig = JSON.stringify(splits)
           if (sig !== lastSplitsRef.current) {
             lastSplitsRef.current = sig
@@ -91,32 +97,6 @@ export default function SplitPanel({ totalAmount, currentUserId, onChange, initi
         } catch {
           await Promise.resolve()
           setIsPending(false)
-        }
-        return
-      }
-
-      if (method === "proportional") {
-        // Proportional amounts are computed server-side so other users' wages stay private.
-        // We just send zeroed placeholders; the server fills in the real amounts on save.
-        const uniqueIds = [...new Set([currentUserId, ...selectedIds])]
-        const splits = uniqueIds.map(id => ({
-          userId: id,
-          amount: 0,
-          splitMethod: "proportional",
-          tagId: null,
-        }))
-
-        const anyMissingWage = uniqueIds.some(id => {
-          const u = users.find(u => u.id === id)
-          return u ? !u.hasWage : false
-        })
-        setIsPending(anyMissingWage && uniqueIds.length > 1)
-        setAmounts({})
-
-        const sig = JSON.stringify(splits)
-        if (sig !== lastSplitsRef.current) {
-          lastSplitsRef.current = sig
-          onChange(splits)
         }
       }
     }
@@ -228,7 +208,7 @@ export default function SplitPanel({ totalAmount, currentUserId, onChange, initi
                   />
                   <Label htmlFor={`split-${u.id}`} className="font-normal text-sm cursor-pointer">
                     {u.name}
-                    {allIncluded.includes(u.id) && method === "proportional" && !u.hasWage && (
+                    {allIncluded.includes(u.id) && method === "proportional" && !u.wage && (
                       <span className="text-amber-600 text-[10px] font-medium ml-1 uppercase tracking-wider">
                         Pending Wage
                       </span>
@@ -248,9 +228,9 @@ export default function SplitPanel({ totalAmount, currentUserId, onChange, initi
                     }}
                   />
                 )}
-                {method === "equal" && allIncluded.includes(u.id) && (
+                {method !== "specified" && allIncluded.includes(u.id) && (
                   <span className="text-sm tabular-nums text-muted-foreground">
-                    £{(amounts[u.id] ?? 0).toFixed(2)}
+                    {isPending && !u.wage ? "—" : `£${(amounts[u.id] ?? 0).toFixed(2)}`}
                   </span>
                 )}
               </div>
@@ -271,13 +251,9 @@ export default function SplitPanel({ totalAmount, currentUserId, onChange, initi
                   setAmounts((a) => ({ ...a, [currentUserId]: val }))
                 }}
               />
-            ) : method === "proportional" ? (
-              <span className="text-xs text-muted-foreground italic">
-                Calculated by wage on save
-              </span>
             ) : (
               <span className="tabular-nums font-medium">
-                £{(amounts[currentUserId] ?? totalAmount).toFixed(2)}
+                {isPending ? "—" : `£${(amounts[currentUserId] ?? totalAmount).toFixed(2)}`}
               </span>
             )}
           </div>

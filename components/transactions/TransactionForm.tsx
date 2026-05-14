@@ -129,7 +129,8 @@ export default function TransactionForm({ initial, currentUserId, onSaved, onCan
     const absAmount = Math.abs(Number(form.totalAmount))
     const signedTotal = transactionType === "debit" ? -absAmount : absAmount
     const splitSum = splits.reduce((s, sp) => s + sp.amount, 0)
-    if (Math.abs(splitSum - absAmount) > 0.011) {
+    const allProportional = splits.length > 0 && splits.every(s => s.splitMethod === "proportional")
+    if (!allProportional && Math.abs(splitSum - absAmount) > 0.011) {
       setError("Split amounts must add up to the total amount.")
       return
     }

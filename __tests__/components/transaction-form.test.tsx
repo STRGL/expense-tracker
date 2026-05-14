@@ -11,8 +11,8 @@ function mockFetch(opts: { acknowledgedSplitWarning?: boolean } = {}) {
         ok: true,
         json: () =>
           Promise.resolve([
-            { id: "me", name: "Me", hasWage: false },
-            { id: "other", name: "Other", hasWage: false },
+            { id: "me", name: "Me", wage: null },
+            { id: "other", name: "Other", wage: null },
           ]),
       })
     }
@@ -141,6 +141,35 @@ describe("TransactionForm sign handling", () => {
       expect(putCall).toBeDefined()
     })
     expect(screen.queryByText(/Before you split/i)).not.toBeInTheDocument()
+  })
+
+  test("does not block submit when all splits are proportional with zero amounts (server recomputes)", async () => {
+    const initial = {
+      id: "txn1",
+      date: "2026-04-01T00:00:00.000Z",
+      merchantRaw: "Tesco",
+      merchantName: "Tesco",
+      totalAmount: -100,
+      notes: null,
+      splits: [
+        { userId: "me", amount: 0, splitMethod: "proportional", tagId: null },
+        { userId: "other", amount: 0, splitMethod: "proportional", tagId: null },
+      ],
+    }
+    render(<TransactionForm initial={initial} currentUserId="me" />)
+
+    await waitFor(() => {
+      expect((global.fetch as unknown as jest.Mock).mock.calls.some(([url]) => url === "/api/profile")).toBe(true)
+    })
+
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }))
+
+    await waitFor(() => {
+      const fetchMock = global.fetch as unknown as jest.Mock
+      const putCall = fetchMock.mock.calls.find(([, init]) => init?.method === "PUT")
+      expect(putCall).toBeDefined()
+    })
+    expect(screen.queryByText(/Split amounts must add up/i)).not.toBeInTheDocument()
   })
 
   test("preserves the date when editing without touching the date input", async () => {
