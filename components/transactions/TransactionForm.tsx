@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import Fuse from "fuse.js"
-import { cn } from "@/lib/utils"
+import { cn, toLocalISODate } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -42,11 +42,10 @@ interface Props {
 
 export default function TransactionForm({ initial, currentUserId, onSaved, onCancel }: Props) {
   const isEdit = !!initial
-  // Determine initial type from sign of existing amount
-  const initialIsCredit = (initial?.totalAmount ?? 0) < 0
+  const initialIsCredit = (initial?.totalAmount ?? 0) > 0
   const [transactionType, setTransactionType] = useState(initialIsCredit ? "credit" : "debit")
   const [form, setForm] = useState({
-    date: initial?.date ? new Date(initial.date).toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10),
+    date: initial?.date ? toLocalISODate(new Date(initial.date)) : toLocalISODate(new Date()),
     merchantRaw: initial?.merchantRaw ?? "",
     merchantName: initial?.merchantName ?? "",
     totalAmount: initial?.totalAmount ? String(Math.abs(initial.totalAmount)) : "",

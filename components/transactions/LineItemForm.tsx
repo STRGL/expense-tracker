@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { toLocalISODate } from "@/lib/utils"
 import SplitPanel, { type Split } from "./SplitPanel"
 
 interface Props {
@@ -53,7 +54,7 @@ export default function LineItemForm({
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        date: new Date().toISOString().slice(0, 10),
+        date: toLocalISODate(new Date()),
         merchantRaw: name.trim(),
         merchantName: name.trim(),
         totalAmount: signedAmount,
