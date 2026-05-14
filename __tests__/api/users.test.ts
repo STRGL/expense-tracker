@@ -52,6 +52,15 @@ describe("GET /api/users (admin only)", () => {
     expect(res.status).toBe(200)
     expect(body).toHaveLength(1)
   })
+
+  it("does not select wage in the Prisma query (privacy: admins do not see other users' wages)", async () => {
+    auth.mockResolvedValue(adminSession)
+    prisma.user.findUnique.mockResolvedValueOnce({ id: "admin1", role: "admin" })
+    prisma.user.findMany.mockResolvedValue([])
+    await GET()
+    const findManyArgs = prisma.user.findMany.mock.calls[0][0]
+    expect(findManyArgs.select.wage).toBeUndefined()
+  })
 })
 
 describe("POST /api/users (admin only)", () => {

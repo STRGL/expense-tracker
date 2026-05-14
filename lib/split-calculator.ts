@@ -61,3 +61,36 @@ export function validateSpecifiedSplits(
 export function isPendingSplit(split: { splitMethod: string; amount: number }): boolean {
   return split.splitMethod === "proportional" && split.amount === 0
 }
+
+export function resolveProportionalSplits<
+  T extends { userId: string; amount: number; splitMethod: string },
+>(
+  splits: T[],
+  totalAmount: number,
+  wagesByUserId: Map<string, number | null>,
+): { splits: T[]; isPending: boolean } {
+  if (splits.length === 0) return { splits, isPending: false }
+  const allProportional = splits.every(s => s.splitMethod === "proportional")
+  if (!allProportional) return { splits, isPending: false }
+
+  const anyMissing = splits.some(s => {
+    const wage = wagesByUserId.get(s.userId)
+    return wage == null
+  })
+  if (anyMissing) {
+    return {
+      splits: splits.map(s => ({ ...s, amount: 0 })),
+      isPending: splits.length > 1,
+    }
+  }
+
+  const userObjs = splits.map(s => ({ id: s.userId, wage: wagesByUserId.get(s.userId) ?? null }))
+  const result = calculateSplits(totalAmount, "proportional", userObjs)
+  const computed = Array.isArray(result) ? result : result.splits
+  const computedById = new Map(computed.map(c => [c.userId, c.amount]))
+
+  return {
+    splits: splits.map(s => ({ ...s, amount: computedById.get(s.userId) ?? 0 })),
+    isPending: false,
+  }
+}

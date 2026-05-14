@@ -15,5 +15,7 @@ export async function GET() {
     orderBy: { name: "asc" },
   })
 
-  return NextResponse.json(users)
+  return NextResponse.json(
+    users.map(u => ({ id: u.id, name: u.name, hasWage: u.wage !== null })),
+  )
 }

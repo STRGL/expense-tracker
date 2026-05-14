@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/api-helpers"
 import { upsertSystemLine, applyDistributeCost } from "@/lib/itemisation"
 import { parseCalendarDate } from "@/lib/date"
+import { resolveProportionalSplits } from "@/lib/split-calculator"
 
 export const dynamic = "force-dynamic"
 
@@ -149,15 +150,26 @@ export async function POST(request: Request) {
     parentTx = parent
   }
 
-  // Validate splits (skip for distributeCost children — splits are auto-generated)
-  const isProportional = splits?.every((s: { splitMethod: string }) => s.splitMethod === "proportional") ?? false
-  const splitSum = splits?.reduce((sum: number, s: { amount: number }) => sum + s.amount, 0) ?? 0
-  const isPending = isProportional && splitSum === 0 && (splits?.length ?? 0) > 1
+  // Resolve proportional splits server-side using wages (clients no longer see other users' wages).
+  let resolvedSplits: typeof splits = splits
+  let isPending = false
+  if (!distributeCost && splits?.length) {
+    const userIds = splits.map((s: { userId: string }) => s.userId)
+    const wageRows = await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, wage: true },
+    })
+    const wagesByUserId = new Map<string, number | null>(wageRows.map(u => [u.id, u.wage]))
+    const result = resolveProportionalSplits(splits, Number(totalAmount), wagesByUserId)
+    resolvedSplits = result.splits
+    isPending = result.isPending
+  }
 
   if (!distributeCost) {
-    if (!splits?.length) {
+    if (!resolvedSplits?.length) {
       return NextResponse.json({ error: "At least one split is required" }, { status: 400 })
     }
+    const splitSum = resolvedSplits.reduce((sum: number, s: { amount: number }) => sum + s.amount, 0)
     if (!isPending && Math.abs(splitSum - totalAmount) > 0.011) {
       return NextResponse.json({ error: "Split amounts must sum to total amount" }, { status: 400 })
     }
@@ -178,8 +190,8 @@ export async function POST(request: Request) {
       },
     })
 
-    if (!distributeCost && splits?.length) {
-      for (const split of splits) {
+    if (!distributeCost && resolvedSplits?.length) {
+      for (const split of resolvedSplits) {
         await tx.transactionSplit.create({
           data: {
             transactionId: t.id,

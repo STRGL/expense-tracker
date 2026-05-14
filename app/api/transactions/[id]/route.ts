@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/api-helpers"
 import { upsertSystemLine } from "@/lib/itemisation"
 import { parseCalendarDate } from "@/lib/date"
+import { resolveProportionalSplits } from "@/lib/split-calculator"
 
 export const dynamic = "force-dynamic"
 
@@ -110,18 +111,33 @@ export async function PUT(
       : { disconnect: true }
   }
 
+  let resolvedSplits: typeof splits = splits
+  let isPending = false
+  if (splits?.length) {
+    const userIds = splits.map((s: { userId: string }) => s.userId)
+    const wageRows = await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, wage: true },
+    })
+    const wagesByUserId = new Map<string, number | null>(wageRows.map(u => [u.id, u.wage]))
+    const effectiveTotal = (data.totalAmount as number | undefined) ?? transaction.totalAmount
+    const result = resolveProportionalSplits(splits, effectiveTotal, wagesByUserId)
+    resolvedSplits = result.splits
+    isPending = result.isPending
+  }
+
   const updated = await prisma.$transaction(async (tx) => {
     const t = await tx.transaction.update({ where: { id }, data })
 
-    if (splits) {
+    if (resolvedSplits) {
       const effectiveTotal = (data.totalAmount as number | undefined) ?? transaction.totalAmount
-      const splitSum = splits.reduce((s: number, sp: { amount: number }) => s + sp.amount, 0)
-      if (Math.abs(splitSum - effectiveTotal) > 0.011) {
+      const splitSum = resolvedSplits.reduce((s: number, sp: { amount: number }) => s + sp.amount, 0)
+      if (!isPending && Math.abs(splitSum - effectiveTotal) > 0.011) {
         throw new Error("Split amounts must sum to total amount")
       }
       const oldSplits = transaction.splits
       await tx.transactionSplit.deleteMany({ where: { transactionId: id } })
-      for (const split of splits) {
+      for (const split of resolvedSplits) {
         await tx.transactionSplit.create({
           data: {
             transactionId: id,

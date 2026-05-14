@@ -26,7 +26,7 @@ jest.mock("@/lib/prisma", () => ({
       count: jest.fn(),
     },
     splitSuggestion: { deleteMany: jest.fn() },
-    user: { findUnique: jest.fn() },
+    user: { findUnique: jest.fn(), findMany: jest.fn().mockResolvedValue([]) },
     notification: { create: jest.fn() },
     $transaction: jest.fn(),
   },
@@ -594,7 +594,7 @@ describe("POST /api/transactions — child creation", () => {
       },
       transactionSplit: { create: jest.fn(), deleteMany: jest.fn() },
       notification: { create: jest.fn() },
-      user: { findUnique: jest.fn() },
+      user: { findUnique: jest.fn(), findMany: jest.fn().mockResolvedValue([]) },
     }))
 
     const req = new Request("http://localhost/api/transactions", {

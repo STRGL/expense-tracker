@@ -6,7 +6,7 @@ import { DEFAULT_TAGS } from "@/lib/default-tags"
 
 export const dynamic = "force-dynamic"
 
-const USER_SELECT = { id: true, name: true, email: true, role: true, isActive: true, wage: true, createdAt: true }
+const USER_SELECT = { id: true, name: true, email: true, role: true, isActive: true, createdAt: true }
 
 export async function GET() {
   const { error } = await requireAdmin()

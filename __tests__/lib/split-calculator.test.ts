@@ -2,9 +2,63 @@ import {
   calculateSplits,
   validateSpecifiedSplits,
   isPendingSplit,
+  resolveProportionalSplits,
   SplitResult,
   ProportionalResult,
 } from "@/lib/split-calculator"
+
+describe("resolveProportionalSplits", () => {
+  const wages = new Map<string, number | null>([
+    ["u1", 30000],
+    ["u2", 60000],
+    ["u3", null],
+  ])
+
+  it("computes proportional amounts from wages when all participants have a wage", () => {
+    const result = resolveProportionalSplits(
+      [
+        { userId: "u1", amount: 0, splitMethod: "proportional" },
+        { userId: "u2", amount: 0, splitMethod: "proportional" },
+      ],
+      90,
+      wages,
+    )
+    expect(result.isPending).toBe(false)
+    const byUser = new Map(result.splits.map(s => [s.userId, s.amount]))
+    expect(byUser.get("u1")! + byUser.get("u2")!).toBeCloseTo(90, 2)
+    expect(byUser.get("u2")!).toBeGreaterThan(byUser.get("u1")!)
+  })
+
+  it("returns pending=true with zero amounts when any participant is missing a wage", () => {
+    const result = resolveProportionalSplits(
+      [
+        { userId: "u1", amount: 0, splitMethod: "proportional" },
+        { userId: "u3", amount: 0, splitMethod: "proportional" },
+      ],
+      90,
+      wages,
+    )
+    expect(result.isPending).toBe(true)
+    expect(result.splits.every(s => s.amount === 0)).toBe(true)
+  })
+
+  it("leaves non-proportional splits untouched", () => {
+    const input = [{ userId: "u1", amount: 45, splitMethod: "equal" }]
+    const result = resolveProportionalSplits(input, 90, wages)
+    expect(result.splits).toEqual(input)
+    expect(result.isPending).toBe(false)
+  })
+
+  it("returns pending=false for single-participant proportional (math still works)", () => {
+    const result = resolveProportionalSplits(
+      [{ userId: "u1", amount: 0, splitMethod: "proportional" }],
+      90,
+      wages,
+    )
+    expect(result.isPending).toBe(false)
+    expect(result.splits[0].amount).toBeCloseTo(90, 2)
+  })
+})
 
 describe("isPendingSplit", () => {
   it("returns true for a proportional split with zero amount (waiting for wage data)", () => {

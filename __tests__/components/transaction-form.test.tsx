@@ -9,7 +9,11 @@ function mockFetch(opts: { acknowledgedSplitWarning?: boolean } = {}) {
     if (url === "/api/users/active") {
       return Promise.resolve({
         ok: true,
-        json: () => Promise.resolve([{ id: "me", name: "Me" }, { id: "other", name: "Other" }]),
+        json: () =>
+          Promise.resolve([
+            { id: "me", name: "Me", hasWage: false },
+            { id: "other", name: "Other", hasWage: false },
+          ]),
       })
     }
     if (url === "/api/profile") {
