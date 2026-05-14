@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { signOut } from "next-auth/react"
 import {
   LayoutDashboard,
   ArrowLeftRight,
@@ -12,6 +13,7 @@ import {
   Users,
   ChevronLeft,
   ChevronRight,
+  LogOut,
 } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -105,10 +107,39 @@ export default function Sidebar({ collapsed, onToggle, isAdmin, hasOtherUsers }:
           {BOTTOM_ITEMS.map((item) => (
             <NavItem key={item.href} item={item} pathname={pathname} collapsed={collapsed} />
           ))}
+          <LogoutItem collapsed={collapsed} />
         </nav>
       </aside>
     </TooltipProvider>
   )
+}
+
+function LogoutItem({ collapsed }: { collapsed: boolean }) {
+  const button = (
+    <button
+      type="button"
+      onClick={() => signOut({ callbackUrl: "/login" })}
+      className={cn(
+        "flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium transition-colors text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+        collapsed && "justify-center px-2",
+      )}
+      aria-label="Log out"
+    >
+      <LogOut className="h-4 w-4 shrink-0" />
+      {!collapsed && <span>Log out</span>}
+    </button>
+  )
+
+  if (collapsed) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>{button}</TooltipTrigger>
+        <TooltipContent side="right">Log out</TooltipContent>
+      </Tooltip>
+    )
+  }
+
+  return button
 }
 
 function NavItem({ item, pathname, collapsed, disabled }: NavItemProps) {
