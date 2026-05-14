@@ -10,11 +10,17 @@ export function toLocalISODate(d: Date): string {
 export function parseCalendarDate(s: string): Date {
   const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/)
   if (!m) throw new Error(`Invalid calendar date: ${s}`)
-  const year = parseInt(m[1])
-  const month = parseInt(m[2]) - 1
-  const day = parseInt(m[3])
-  const d = new Date(Date.UTC(year, month, day))
-  if (isNaN(d.getTime())) throw new Error(`Invalid calendar date: ${s}`)
+  const year = parseInt(m[1], 10)
+  const month = parseInt(m[2], 10)
+  const day = parseInt(m[3], 10)
+  const d = new Date(Date.UTC(year, month - 1, day))
+  if (
+    d.getUTCFullYear() !== year ||
+    d.getUTCMonth() !== month - 1 ||
+    d.getUTCDate() !== day
+  ) {
+    throw new Error(`Invalid calendar date: ${s}`)
+  }
   return d
 }
 
@@ -46,5 +52,8 @@ export function toCalendarDateInTZ(
   const year = parts.find(p => p.type === "year")?.value
   const month = parts.find(p => p.type === "month")?.value
   const day = parts.find(p => p.type === "day")?.value
+  if (!year || !month || !day) {
+    throw new Error(`Could not extract calendar date in TZ ${tz}`)
+  }
   return `${year}-${month}-${day}`
 }

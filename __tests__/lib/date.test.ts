@@ -30,6 +30,18 @@ describe("parseCalendarDate", () => {
     expect(() => parseCalendarDate("2026/04/01")).toThrow()
     expect(() => parseCalendarDate("")).toThrow()
   })
+
+  it("throws on out-of-range dates", () => {
+    expect(() => parseCalendarDate("2026-13-01")).toThrow()
+    expect(() => parseCalendarDate("2026-02-30")).toThrow()
+    expect(() => parseCalendarDate("2025-02-29")).toThrow()
+    expect(() => parseCalendarDate("2026-04-31")).toThrow()
+    expect(() => parseCalendarDate("2026-00-15")).toThrow()
+  })
+
+  it("accepts leap day in a leap year", () => {
+    expect(parseCalendarDate("2024-02-29").toISOString()).toBe("2024-02-29T00:00:00.000Z")
+  })
 })
 
 describe("formatCalendarDate", () => {
