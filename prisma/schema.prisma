@@ -175,3 +175,8 @@ model SplitSuggestion {
   fromUser    User        @relation("SuggestionFrom", fields: [fromUserId], references: [id])
   toUser      User        @relation("SuggestionTo", fields: [toUserId], references: [id])
 }
+
+model AppliedDataMigration {
+  name      String   @id
+  appliedAt DateTime @default(now())
+}
