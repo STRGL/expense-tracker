@@ -16,12 +16,7 @@ import SuggestChangeForm from "./SuggestChangeForm"
 import LineItemForm from "./LineItemForm"
 import type { TransactionListItem } from "@/types/api"
 import type { TagWithChildren } from "@/lib/tag-utils"
-
-function formatDate(dateStr: string | Date) {
-  return new Date(dateStr).toLocaleDateString("en-GB", {
-    day: "2-digit", month: "short", year: "numeric",
-  })
-}
+import { formatCalendarDate } from "@/lib/date"
 
 function formatAmount(amount: number) {
   return new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(amount)
@@ -269,7 +264,7 @@ export default function TransactionDialog({ transaction, onClose, onSaved }: Pro
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div>
               <p className="text-xs text-muted-foreground mb-0.5">Date</p>
-              <p className="font-medium">{formatDate(detail.date)}</p>
+              <p className="font-medium">{formatCalendarDate(detail.date)}</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground mb-0.5">Total amount</p>

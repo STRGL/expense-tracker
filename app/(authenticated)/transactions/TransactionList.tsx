@@ -12,6 +12,7 @@ import ConfidenceDot from "@/components/transactions/ConfidenceDot"
 import TransactionDialog from "@/components/transactions/TransactionDialog"
 import BulkActionBar from "@/components/ui/BulkActionBar"
 import type { TransactionListItem, TagSummary } from "@/types/api"
+import { formatCalendarDate } from "@/lib/date"
 
 interface FlatTag extends TagSummary {
   parentId: string | null
@@ -32,12 +33,6 @@ interface Filters {
 
 interface Props {
   onReload?: () => void
-}
-
-function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString("en-GB", {
-    day: "2-digit", month: "short", year: "numeric",
-  })
 }
 
 function formatAmount(amount: number) {
@@ -348,7 +343,7 @@ export default function TransactionList({ onReload: _onReload }: Props = {}) {
                         <ConfidenceDot level={tx.confidenceLevel} />
                       </td>
                       <td className="px-3 py-2.5 text-muted-foreground whitespace-nowrap">
-                        {formatDate(tx.date)}
+                        {formatCalendarDate(tx.date)}
                       </td>
                       <td className="px-3 py-2.5 font-medium max-w-[200px] truncate">
                         {tx.merchantName}
@@ -418,7 +413,7 @@ export default function TransactionList({ onReload: _onReload }: Props = {}) {
                         </td>
                         <td className="px-1 py-2.5" />
                         <td className="px-3 py-2.5 text-muted-foreground whitespace-nowrap text-xs">
-                          {formatDate(typeof child.date === "string" ? child.date : new Date(child.date).toISOString())}
+                          {formatCalendarDate(typeof child.date === "string" ? child.date : new Date(child.date).toISOString())}
                         </td>
                         <td className="px-3 py-2.5 max-w-[200px] truncate">
                           <span className="text-xs text-muted-foreground mr-1">↳</span>
