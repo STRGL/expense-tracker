@@ -4,6 +4,7 @@ import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/api-helpers"
 import { upsertSystemLine } from "@/lib/itemisation"
+import { parseCalendarDate } from "@/lib/date"
 
 export const dynamic = "force-dynamic"
 
@@ -98,7 +99,7 @@ export async function PUT(
 
   const { date, merchantRaw, merchantName, totalAmount, notes, splits, paymentFromUserId } = await request.json()
   const data: Prisma.TransactionUpdateInput = {}
-  if (date) data.date = new Date(date)
+  if (date) data.date = parseCalendarDate(date)
   if (merchantRaw?.trim()) data.merchantRaw = merchantRaw.trim()
   if (merchantName?.trim()) data.merchantName = merchantName.trim()
   if (totalAmount != null) data.totalAmount = Number(totalAmount)

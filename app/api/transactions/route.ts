@@ -4,6 +4,7 @@ import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/api-helpers"
 import { upsertSystemLine, applyDistributeCost } from "@/lib/itemisation"
+import { parseCalendarDate } from "@/lib/date"
 
 export const dynamic = "force-dynamic"
 
@@ -26,8 +27,8 @@ export async function GET(request: Request) {
 
   const txWhere: Prisma.TransactionWhereInput = {}
   const dateFilter: Prisma.DateTimeFilter = {}
-  if (dateFrom) dateFilter.gte = new Date(dateFrom)
-  if (dateTo) dateFilter.lte = new Date(dateTo)
+  if (dateFrom) dateFilter.gte = parseCalendarDate(dateFrom)
+  if (dateTo) dateFilter.lte = parseCalendarDate(dateTo)
   if (dateFrom || dateTo) txWhere.date = dateFilter
   if (merchant) txWhere.merchantName = { contains: merchant }
   const amountFilter: Prisma.FloatFilter = {}
@@ -165,7 +166,7 @@ export async function POST(request: Request) {
   const transaction = await prisma.$transaction(async (tx) => {
     const t = await tx.transaction.create({
       data: {
-        date: parentId ? (parentTx?.date ?? new Date(date)) : new Date(date),
+        date: parentId ? (parentTx?.date ?? parseCalendarDate(date)) : parseCalendarDate(date),
         merchantRaw: parentId ? (parentTx?.merchantRaw ?? merchantRaw.trim()) : merchantRaw.trim(),
         merchantName: merchantName.trim(),
         totalAmount: Number(totalAmount),

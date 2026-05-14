@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/api-helpers"
+import { parseCalendarDate } from "@/lib/date"
 
 export const dynamic = "force-dynamic"
 
@@ -41,7 +42,7 @@ export async function PUT(
       const changes = JSON.parse(suggestion.suggestedChanges)
       const newTotalAmount = changes.totalAmount ? Number(changes.totalAmount.suggested) : undefined
       const txData: Prisma.TransactionUpdateInput = {}
-      if (changes.date) txData.date = new Date(changes.date.suggested)
+      if (changes.date) txData.date = parseCalendarDate(changes.date.suggested)
       if (changes.merchantName) txData.merchantName = changes.merchantName.suggested
       if (newTotalAmount !== undefined) txData.totalAmount = newTotalAmount
       if (changes.notes !== undefined) txData.notes = changes.notes?.suggested ?? null
