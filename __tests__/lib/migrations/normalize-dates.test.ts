@@ -3,11 +3,18 @@
  */
 import { migrateDates, MIGRATION_NAME } from "@/lib/migrations/normalize-dates"
 
-const mockPrisma = {
+type MockPrisma = {
+  appliedDataMigration: { findUnique: jest.Mock; create: jest.Mock }
+  importRow: { findMany: jest.Mock; update: jest.Mock }
+  transaction: { findMany: jest.Mock; update: jest.Mock }
+  $transaction: jest.Mock
+}
+
+const mockPrisma: MockPrisma = {
   appliedDataMigration: { findUnique: jest.fn(), create: jest.fn() },
   importRow: { findMany: jest.fn(), update: jest.fn() },
   transaction: { findMany: jest.fn(), update: jest.fn() },
-  $transaction: jest.fn(async (fn: (tx: typeof mockPrisma) => Promise<unknown>) => fn(mockPrisma)),
+  $transaction: jest.fn(async (fn: (tx: MockPrisma) => Promise<unknown>) => fn(mockPrisma)),
 }
 
 beforeEach(() => {
