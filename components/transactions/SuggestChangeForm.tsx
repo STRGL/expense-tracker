@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label"
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog"
-import { toLocalISODate } from "@/lib/utils"
+import { toLocalISODate } from "@/lib/date"
 import type { TransactionDetail } from "./TransactionDialog"
 
 type FieldKey = "date" | "merchantName" | "totalAmount" | "notes" | "mySplitAmount"

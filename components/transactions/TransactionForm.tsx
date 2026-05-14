@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from "react"
 import Fuse from "fuse.js"
-import { cn, toLocalISODate } from "@/lib/utils"
+import { cn } from "@/lib/utils"
+import { toLocalISODate } from "@/lib/date"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
