@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button"
 import Spinner from "@/components/ui/Spinner"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { toast } from "sonner"
 import ConfidenceDot from "@/components/transactions/ConfidenceDot"
 import TransactionDialog from "@/components/transactions/TransactionDialog"
 import BulkActionBar from "@/components/ui/BulkActionBar"
@@ -156,6 +158,26 @@ export default function TransactionList({ onReload: _onReload }: Props = {}) {
       setTags(flat)
     })
   }, [])
+
+  async function updateRowTag(txId: string, tagId: string | null) {
+    const previous = transactions
+    const nextTag = tagId ? tags.find((t) => t.id === tagId) ?? null : null
+    setTransactions((prev) =>
+      prev.map((t) =>
+        t.id === txId ? { ...t, myTagId: tagId, myTag: nextTag } : t,
+      ),
+    )
+    try {
+      await apiFetch(`/api/transactions/${txId}/my-split`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tagId }),
+      })
+    } catch {
+      setTransactions(previous)
+      toast.error("Failed to update tag.")
+    }
+  }
 
   function handleFilterChange(updates: Partial<Filters>) {
     setFilters((f) => {
@@ -402,18 +424,45 @@ export default function TransactionList({ onReload: _onReload }: Props = {}) {
                           <span className="ml-1 text-xs text-muted-foreground font-normal italic">(Pending)</span>
                         )}
                       </td>
-                      <td className="px-3 py-2.5">
-                        {tx.myTag ? (
-                          <span className="flex items-center gap-1.5">
-                            <span
-                              className="w-2 h-2 rounded-full shrink-0"
-                              style={{ backgroundColor: tx.myTag.colour }}
-                            />
-                            <span className="text-xs">{tx.myTag.name}</span>
-                          </span>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">Untagged</span>
-                        )}
+                      <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
+                        <Select
+                          value={tx.myTagId ?? "none"}
+                          onValueChange={(v) => void updateRowTag(tx.id, v === "none" ? null : v)}
+                        >
+                          <SelectTrigger
+                            className="h-7 border-0 bg-transparent hover:bg-muted/50 px-1.5 shadow-none [&>svg]:opacity-40 hover:[&>svg]:opacity-100 w-auto min-w-0"
+                          >
+                            <SelectValue placeholder={<span className="text-xs text-muted-foreground">Untagged</span>}>
+                              {tx.myTag ? (
+                                <span className="flex items-center gap-1.5">
+                                  <span
+                                    className="w-2 h-2 rounded-full shrink-0"
+                                    style={{ backgroundColor: tx.myTag.colour }}
+                                  />
+                                  <span className="text-xs">{tx.myTag.name}</span>
+                                </span>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">Untagged</span>
+                              )}
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">
+                              <span className="text-xs text-muted-foreground">Untagged</span>
+                            </SelectItem>
+                            {tags.map((t) => (
+                              <SelectItem key={t.id} value={t.id}>
+                                <span className="flex items-center gap-2">
+                                  <span
+                                    className="w-2 h-2 rounded-full shrink-0"
+                                    style={{ backgroundColor: t.colour }}
+                                  />
+                                  <span>{t.parentId ? "  " : ""}{t.name}</span>
+                                </span>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </td>
                       <td className="px-3 py-2.5 text-right font-medium tabular-nums">
                         <AmountCell amount={tx.myAmount} />

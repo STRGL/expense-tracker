@@ -8,8 +8,10 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import SplitPanel, { type Split } from "./SplitPanel"
 import SplitWarningModal from "./SplitWarningModal"
+import type { TagWithChildren } from "@/lib/tag-utils"
 import type { FormEvent } from "react"
 import { apiFetch, ApiError } from "@/lib/api-client"
 
@@ -66,6 +68,28 @@ export default function TransactionForm({ initial, currentUserId, onSaved, onCan
   const [paymentFromUserId, setPaymentFromUserId] = useState<string | null>(
     initial?.paymentFromUserId ?? null
   )
+  const [myTagId, setMyTagId] = useState<string | null>(
+    initial?.splits?.find((s) => s.userId === currentUserId)?.tagId ?? null
+  )
+  const [tags, setTags] = useState<Array<{ id: string; name: string; colour: string; parentId: string | null }>>([])
+
+  useEffect(() => {
+    fetch("/api/tags")
+      .then((r) => r.json())
+      .then((tree: TagWithChildren[]) => {
+        const flat: Array<{ id: string; name: string; colour: string; parentId: string | null }> = []
+        for (const parent of tree) {
+          flat.push({ id: parent.id, name: parent.name, colour: parent.colour, parentId: parent.parentId })
+          for (const child of parent.children) {
+            flat.push({ id: child.id, name: child.name, colour: child.colour, parentId: child.parentId })
+          }
+        }
+        setTags(flat)
+      })
+      .catch(() => {
+        // silently fail — tag picker stays empty
+      })
+  }, [])
 
   const [, setAliases] = useState<MerchantAlias[]>([])
   const [suggestions, setSuggestions] = useState<MerchantAlias[]>([])
@@ -148,6 +172,7 @@ export default function TransactionForm({ initial, currentUserId, onSaved, onCan
     const signedSplits = splits.map(s => ({
       ...s,
       amount: transactionType === "debit" ? -Math.abs(s.amount) : Math.abs(s.amount),
+      tagId: s.userId === currentUserId ? myTagId : s.tagId,
     }))
 
     try {
@@ -243,6 +268,29 @@ export default function TransactionForm({ initial, currentUserId, onSaved, onCan
             ))}
           </div>
         )}
+      </div>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="tag">Your tag <span className="text-muted-foreground text-xs">(optional)</span></Label>
+        <Select
+          value={myTagId ?? "none"}
+          onValueChange={(v) => setMyTagId(v === "none" ? null : v)}
+        >
+          <SelectTrigger id="tag" className="h-9 text-sm">
+            <SelectValue placeholder="Untagged" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">Untagged</SelectItem>
+            {tags.map((t) => (
+              <SelectItem key={t.id} value={t.id}>
+                <span className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: t.colour }} />
+                  <span>{t.parentId ? "  " : ""}{t.name}</span>
+                </span>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="space-y-1.5">

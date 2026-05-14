@@ -8,14 +8,10 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Label } from "@/components/ui/label"
 import TransactionForm from "./TransactionForm"
 import SuggestChangeForm from "./SuggestChangeForm"
 import LineItemForm from "./LineItemForm"
 import type { TransactionListItem } from "@/types/api"
-import type { TagWithChildren } from "@/lib/tag-utils"
 import { formatCalendarDate } from "@/lib/date"
 import { isPendingSplit } from "@/lib/split-calculator"
 
@@ -30,6 +26,7 @@ interface SplitDetail {
   amount: number
   splitMethod: string
   tagId: string | null
+  tag?: { id: string; name: string; colour: string } | null
 }
 
 export interface ChildItem {
@@ -60,13 +57,6 @@ export interface TransactionDetail {
   systemLine: ChildItem | null
 }
 
-interface FlatTag {
-  id: string
-  name: string
-  colour: string
-  parentId: string | null
-}
-
 interface Props {
   transaction: TransactionListItem | null
   onClose: () => void
@@ -78,9 +68,6 @@ export default function TransactionDialog({ transaction, onClose, onSaved }: Pro
   const [userId, setUserId] = useState<string | null>(null)
   const [userWage, setUserWage] = useState<number | null | undefined>(undefined)
   const [mode, setMode] = useState<"view" | "edit">("view")
-  const [tags, setTags] = useState<FlatTag[]>([])
-  const [myTagId, setMyTagId] = useState<string | null>(transaction?.myTagId ?? null)
-  const [savingTag, setSavingTag] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [declining, setDeclining] = useState(false)
   const [showSuggest, setShowSuggest] = useState(false)
@@ -92,8 +79,7 @@ export default function TransactionDialog({ transaction, onClose, onSaved }: Pro
     Promise.all([
       fetch(`/api/transactions/${transaction.id}`).then(ok) as Promise<TransactionDetail>,
       fetch("/api/profile").then(ok) as Promise<{ id: string; wage: number | null }>,
-      fetch("/api/tags").then(ok) as Promise<TagWithChildren[]>,
-    ]).then(([det, profile, tagTree]) => {
+    ]).then(([det, profile]) => {
       setDetail({
         ...det,
         children: det.children ?? [],
@@ -105,35 +91,11 @@ export default function TransactionDialog({ transaction, onClose, onSaved }: Pro
       })
       setUserId(profile.id)
       setUserWage(profile.wage)
-      setMyTagId(det.mySplit?.tagId ?? null)
-      const flat: FlatTag[] = []
-      for (const parent of tagTree) {
-        flat.push(parent)
-        for (const child of parent.children) flat.push(child)
-      }
-      setTags(flat)
     }).catch(() => {
       toast.error("Failed to load transaction. Please try again.")
       onClose()
     })
   }, [transaction, onClose])
-
-  async function handleTagSave() {
-    if (!transaction) return
-    setSavingTag(true)
-    const res = await fetch(`/api/transactions/${transaction.id}/my-split`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tagId: myTagId }),
-    })
-    setSavingTag(false)
-    if (res.ok) {
-      toast.success("Tag saved.")
-      onSaved?.()
-    } else {
-      toast.error("Failed to save tag.")
-    }
-  }
 
   async function handleDelete() {
     if (!transaction) return
@@ -339,33 +301,18 @@ export default function TransactionDialog({ transaction, onClose, onSaved }: Pro
             </div>
           )}
 
-          <Separator />
-
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Your tag for this transaction</Label>
-            <Select
-              value={myTagId ?? "none"}
-              onValueChange={(v) => setMyTagId(v === "none" ? null : v)}
-            >
-              <SelectTrigger className="h-8 text-sm">
-                <SelectValue placeholder="Untagged" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Untagged</SelectItem>
-                {tags.map((t) => (
-                  <SelectItem key={t.id} value={t.id}>
-                    <div className="flex items-center gap-2">
-                      <span
-                        className="w-2 h-2 rounded-full"
-                        style={{ backgroundColor: t.colour }}
-                      />
-                      {t.parentId ? "  " : ""}{t.name}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {detail.mySplit?.tag && (
+            <div>
+              <p className="text-xs text-muted-foreground mb-0.5">Your tag</p>
+              <span className="inline-flex items-center gap-1.5 text-sm">
+                <span
+                  className="w-2 h-2 rounded-full shrink-0"
+                  style={{ backgroundColor: detail.mySplit.tag.colour }}
+                />
+                {detail.mySplit.tag.name}
+              </span>
+            </div>
+          )}
 
           {!isOwner && (
             <div className="space-y-1.5">
@@ -416,9 +363,6 @@ export default function TransactionDialog({ transaction, onClose, onSaved }: Pro
               </Button>
             </>
           )}
-          <Button size="sm" onClick={handleTagSave} disabled={savingTag}>
-            {savingTag ? "Saving..." : "Save tag"}
-          </Button>
         </DialogFooter>
       </DialogContent>
       {showSuggest && (

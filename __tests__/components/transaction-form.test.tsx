@@ -27,6 +27,9 @@ function mockFetch(opts: { acknowledgedSplitWarning?: boolean } = {}) {
           }),
       })
     }
+    if (url === "/api/tags") {
+      return Promise.resolve({ ok: true, json: () => Promise.resolve([]) })
+    }
     return Promise.resolve({ ok: true, json: () => Promise.resolve({ id: "txn1" }) })
   })
 }
@@ -170,6 +173,29 @@ describe("TransactionForm sign handling", () => {
       expect(putCall).toBeDefined()
     })
     expect(screen.queryByText(/Split amounts must add up/i)).not.toBeInTheDocument()
+  })
+
+  test("preserves the user's tag when editing without changing it (regression: SplitPanel used to wipe it)", async () => {
+    const initial = {
+      id: "txn1",
+      date: "2026-04-01T00:00:00.000Z",
+      merchantRaw: "Tesco",
+      merchantName: "Tesco",
+      totalAmount: -50,
+      notes: null,
+      splits: [{ userId: "me", amount: -50, splitMethod: "equal", tagId: "tag-groceries" }],
+    }
+    render(<TransactionForm initial={initial} currentUserId="me" />)
+
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }))
+
+    await waitFor(() => {
+      const fetchMock = global.fetch as unknown as jest.Mock
+      const putCall = fetchMock.mock.calls.find(([, init]) => init?.method === "PUT")
+      expect(putCall).toBeDefined()
+      const body = JSON.parse(putCall![1].body)
+      expect(body.splits[0].tagId).toBe("tag-groceries")
+    })
   })
 
   test("preserves the date when editing without touching the date input", async () => {
