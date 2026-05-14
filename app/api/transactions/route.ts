@@ -37,11 +37,14 @@ export async function GET(request: Request) {
   if (maxAmount) amountFilter.lte = Number(maxAmount)
   if (minAmount || maxAmount) txWhere.totalAmount = amountFilter
 
+  const tagFilter: Prisma.TransactionSplitWhereInput =
+    tagId === "__untagged__" ? { tagId: null } : tagId ? { tagId } : {}
+
   const splitWhere = {
     userId: session.user.id,
     status: "active",
     hiddenAt: null,
-    ...(tagId ? { tagId } : {}),
+    ...tagFilter,
     transaction: {
       ...txWhere,
       isSystemLine: false,

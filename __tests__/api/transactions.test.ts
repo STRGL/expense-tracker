@@ -97,6 +97,36 @@ describe("GET /api/transactions", () => {
       })
     )
   })
+
+  it("filters by a specific tag id", async () => {
+    auth.mockResolvedValue(session)
+    prisma.transactionSplit.findMany.mockResolvedValue([])
+    prisma.transactionSplit.count.mockResolvedValue(0)
+    const req = new Request("http://localhost/api/transactions?tagId=t1")
+    await GET(req)
+    const call = (prisma.transactionSplit.findMany as jest.Mock).mock.calls[0][0]
+    expect(call.where.tagId).toBe("t1")
+  })
+
+  it("filters by null tagId when tagId=__untagged__ sentinel is passed", async () => {
+    auth.mockResolvedValue(session)
+    prisma.transactionSplit.findMany.mockResolvedValue([])
+    prisma.transactionSplit.count.mockResolvedValue(0)
+    const req = new Request("http://localhost/api/transactions?tagId=__untagged__")
+    await GET(req)
+    const call = (prisma.transactionSplit.findMany as jest.Mock).mock.calls[0][0]
+    expect(call.where.tagId).toBeNull()
+  })
+
+  it("does not filter by tag when tagId is not supplied", async () => {
+    auth.mockResolvedValue(session)
+    prisma.transactionSplit.findMany.mockResolvedValue([])
+    prisma.transactionSplit.count.mockResolvedValue(0)
+    const req = new Request("http://localhost/api/transactions")
+    await GET(req)
+    const call = (prisma.transactionSplit.findMany as jest.Mock).mock.calls[0][0]
+    expect(call.where.tagId).toBeUndefined()
+  })
 })
 
 describe("POST /api/transactions", () => {

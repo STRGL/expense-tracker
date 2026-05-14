@@ -285,6 +285,7 @@ export default function TransactionList({ onReload: _onReload }: Props = {}) {
           onChange={(e) => handleFilterChange({ tagId: e.target.value })}
         >
           <option value="">All tags</option>
+          <option value="__untagged__">Untagged</option>
           {tags.map((t) => (
             <option key={t.id} value={t.id}>{t.parentId ? "  " : ""}{t.name}</option>
           ))}
