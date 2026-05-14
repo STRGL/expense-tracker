@@ -10,6 +10,7 @@ import ImportRowDialog from "./ImportRowDialog"
 import BulkActionBar from "@/components/ui/BulkActionBar"
 import type { ImportRow, ImportBatch } from "@prisma/client"
 import type { ConfidenceLevel } from "@/types/imports"
+import { formatCalendarDate } from "@/lib/date"
 import type { TagWithChildren } from "@/lib/tag-utils"
 
 interface BatchWithRows extends ImportBatch {
@@ -21,11 +22,6 @@ interface FlatTag {
   name: string
   colour: string
   parentId: string | null
-}
-
-function formatDate(d: string | Date | null | undefined) {
-  if (!d) return "—"
-  return new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
 }
 
 function formatAmount(a: number | null | undefined) {
@@ -264,7 +260,7 @@ export default function ReviewTable({ batchId }: Props) {
                     <ConfidenceDot level={row.confidenceLevel as ConfidenceLevel} />
                   </td>
                   <td className="px-3 py-2.5 text-muted-foreground whitespace-nowrap">
-                    {formatDate(row.date)}
+                    {row.date ? formatCalendarDate(row.date) : "—"}
                   </td>
                   <td className="px-3 py-2.5 max-w-[220px]">
                     <div className="flex items-center gap-1.5">

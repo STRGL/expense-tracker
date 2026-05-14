@@ -5,15 +5,12 @@ import { useRouter } from "next/navigation"
 import { Search } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import TransactionDialog from "@/components/transactions/TransactionDialog"
+import { formatCalendarDate } from "@/lib/date"
 import type { TransactionListItem } from "@/types/api"
 import type { ChangeEvent, KeyboardEvent } from "react"
 
 function formatAmount(n: number) {
   return new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(n)
-}
-
-function formatDate(d: string | Date) {
-  return new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
 }
 
 export default function SearchBar() {
@@ -112,7 +109,7 @@ export default function SearchBar() {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{tx.merchantName}</p>
                   <p className="text-xs text-muted-foreground">
-                    {formatDate(tx.date)} · {formatAmount(tx.myAmount)}
+                    {formatCalendarDate(tx.date)} · {formatAmount(tx.myAmount)}
                     {tx.myTag && (
                       <span className="ml-1.5 inline-flex items-center gap-0.5">
                         <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: tx.myTag.colour }} />

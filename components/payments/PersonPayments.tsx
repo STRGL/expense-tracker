@@ -4,14 +4,11 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 import Spinner from "@/components/ui/Spinner"
+import { formatCalendarDate } from "@/lib/date"
 import type { PersonPaymentDetail } from "@/types/payments"
 
 function formatAmount(n: number) {
   return new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(n)
-}
-
-function formatDate(d: string) {
-  return new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
 }
 
 interface Props {
@@ -72,7 +69,7 @@ export default function PersonPayments({ slug }: Props) {
               <div key={s.splitId} className="flex items-center justify-between px-4 py-3">
                 <div>
                   <p className="text-sm font-medium">{s.merchantName}</p>
-                  <p className="text-xs text-muted-foreground">{formatDate(s.date)}</p>
+                  <p className="text-xs text-muted-foreground">{formatCalendarDate(s.date)}</p>
                 </div>
                 <div className="text-right">
                   <p className={`text-sm font-medium tabular-nums ${s.direction === "owedByThem" ? "text-green-600" : "text-red-600"}`}>
@@ -98,7 +95,7 @@ export default function PersonPayments({ slug }: Props) {
               <div key={p.transactionId} className="flex items-center justify-between px-4 py-3">
                 <div>
                   <p className="text-sm font-medium">{p.merchantName}</p>
-                  <p className="text-xs text-muted-foreground">{formatDate(p.date)}</p>
+                  <p className="text-xs text-muted-foreground">{formatCalendarDate(p.date)}</p>
                 </div>
                 <p className="text-sm font-medium tabular-nums text-green-600">
                   +{formatAmount(p.amount)}

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import TransactionDialog from "@/components/transactions/TransactionDialog"
+import { formatCalendarDate } from "@/lib/date"
 import type { TransactionListItem } from "@/types/api"
 import type { TagWithChildren } from "@/lib/tag-utils"
 import type { FormEvent } from "react"
@@ -31,10 +32,6 @@ interface SearchFilters {
 
 function formatAmount(n: number) {
   return new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(n)
-}
-
-function formatDate(d: string | Date) {
-  return new Date(d).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
 }
 
 export default function SearchPage() {
@@ -231,7 +228,7 @@ export default function SearchPage() {
             <tbody className="divide-y">
               {results.map(tx => (
                 <tr key={tx.id} className="hover:bg-muted/30 cursor-pointer" onClick={() => setSelected(tx)}>
-                  <td className="px-3 py-2.5 text-muted-foreground whitespace-nowrap">{formatDate(tx.date)}</td>
+                  <td className="px-3 py-2.5 text-muted-foreground whitespace-nowrap">{formatCalendarDate(tx.date)}</td>
                   <td className="px-3 py-2.5 font-medium max-w-[200px] truncate">
                     {tx.merchantName}
                     {tx.splitCount > 1 && (
