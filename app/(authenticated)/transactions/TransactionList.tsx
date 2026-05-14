@@ -33,6 +33,10 @@ interface Filters {
   limit: number
 }
 
+const SORT_STORAGE_KEY = "expense-tracker:transactions-sort"
+const DEFAULT_SORT_BY = "date"
+const DEFAULT_SORT_ORDER = "desc"
+
 interface Props {
   onReload?: () => void
 }
@@ -74,11 +78,45 @@ export default function TransactionList({ onReload: _onReload }: Props = {}) {
     tagId: searchParams.get("tagId") ?? "",
     minAmount: searchParams.get("minAmount") ?? "",
     maxAmount: searchParams.get("maxAmount") ?? "",
-    sortBy: searchParams.get("sortBy") ?? "date",
-    sortOrder: searchParams.get("sortOrder") ?? "desc",
+    sortBy: searchParams.get("sortBy") ?? DEFAULT_SORT_BY,
+    sortOrder: searchParams.get("sortOrder") ?? DEFAULT_SORT_ORDER,
     page: 1,
     limit: 25,
   })
+
+  // Read persisted sort from localStorage after mount (URL params still take precedence).
+  useEffect(() => {
+    if (searchParams.get("sortBy") || searchParams.get("sortOrder")) return
+    try {
+      const stored = localStorage.getItem(SORT_STORAGE_KEY)
+      if (!stored) return
+      const parsed = JSON.parse(stored) as { sortBy?: string; sortOrder?: string }
+      if (parsed.sortBy || parsed.sortOrder) {
+        setFilters((f) => ({
+          ...f,
+          sortBy: parsed.sortBy ?? f.sortBy,
+          sortOrder: parsed.sortOrder ?? f.sortOrder,
+        }))
+      }
+    } catch {
+      // ignore corrupt localStorage entries
+    }
+    // searchParams ref intentionally captured at mount only — we don't want to overwrite
+    // user-driven sort changes after initial load.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Persist sort to localStorage whenever it changes.
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        SORT_STORAGE_KEY,
+        JSON.stringify({ sortBy: filters.sortBy, sortOrder: filters.sortOrder }),
+      )
+    } catch {
+      // ignore quota errors
+    }
+  }, [filters.sortBy, filters.sortOrder])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -196,7 +234,9 @@ export default function TransactionList({ onReload: _onReload }: Props = {}) {
     setExpandedIds(prev => new Set(prev).add(txId))
   }
 
-  const hasFilters = Object.entries(filters).some(([k, v]) => !["sortBy", "sortOrder", "page", "limit"].includes(k) && v)
+  const hasFilters = Object.entries(filters).some(([k, v]) => !["sortBy", "sortOrder", "page", "limit"].includes(k) && v) ||
+    filters.sortBy !== DEFAULT_SORT_BY ||
+    filters.sortOrder !== DEFAULT_SORT_ORDER
   const totalPages = Math.ceil(total / filters.limit)
 
   return (
@@ -265,7 +305,10 @@ export default function TransactionList({ onReload: _onReload }: Props = {}) {
             variant="ghost"
             size="sm"
             className="h-8 text-xs"
-            onClick={() => handleFilterChange({ merchant: "", dateFrom: "", dateTo: "", tagId: "", minAmount: "", maxAmount: "", sortBy: "date", sortOrder: "desc" })}
+            onClick={() => {
+              try { localStorage.removeItem(SORT_STORAGE_KEY) } catch { /* ignore */ }
+              handleFilterChange({ merchant: "", dateFrom: "", dateTo: "", tagId: "", minAmount: "", maxAmount: "", sortBy: DEFAULT_SORT_BY, sortOrder: DEFAULT_SORT_ORDER })
+            }}
           >
             Clear
           </Button>
