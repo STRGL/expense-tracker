@@ -36,14 +36,24 @@ export async function migrateDates(prisma: PrismaClient): Promise<MigrationResul
       let target: Date | null = null
 
       if (txn.importBatchId) {
-        const match = await tx.importRow.findFirst({
+        const matches = await tx.importRow.findMany({
           where: {
             batchId: txn.importBatchId,
             merchantRaw: txn.merchantRaw,
             amount: { gte: txn.totalAmount - 0.005, lte: txn.totalAmount + 0.005 },
+            date: { not: null },
           },
+          orderBy: { date: "asc" },
         })
-        if (match?.date) target = match.date
+        if (matches.length > 0) {
+          const txnTime = txn.date.getTime()
+          const closest = matches.reduce((best, current) =>
+            Math.abs(current.date!.getTime() - txnTime) < Math.abs(best.date!.getTime() - txnTime)
+              ? current
+              : best
+          )
+          target = closest.date
+        }
       }
 
       if (!target) target = normalise(txn.date)

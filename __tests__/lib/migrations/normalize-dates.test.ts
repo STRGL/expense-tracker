@@ -5,7 +5,7 @@ import { migrateDates, MIGRATION_NAME } from "@/lib/migrations/normalize-dates"
 
 const mockPrisma = {
   appliedDataMigration: { findUnique: jest.fn(), create: jest.fn() },
-  importRow: { findMany: jest.fn(), update: jest.fn(), findFirst: jest.fn() },
+  importRow: { findMany: jest.fn(), update: jest.fn() },
   transaction: { findMany: jest.fn(), update: jest.fn() },
   $transaction: jest.fn(async (fn: (tx: typeof mockPrisma) => Promise<unknown>) => fn(mockPrisma)),
 }
@@ -52,18 +52,46 @@ describe("migrateDates", () => {
       merchantRaw: "TESCO",
       totalAmount: -50,
     }])
-    mockPrisma.importRow.findFirst.mockResolvedValue({ id: "r1", date: restored })
+    mockPrisma.importRow.findMany
+      .mockResolvedValueOnce([])  // first call: the date-not-null sweep
+      .mockResolvedValueOnce([{ id: "r1", date: restored }])  // second call: the match lookup for txn t1
     await migrateDates(mockPrisma as never)
-    expect(mockPrisma.importRow.findFirst).toHaveBeenCalledWith({
+    expect(mockPrisma.importRow.findMany).toHaveBeenCalledWith({
       where: {
         batchId: "b1",
         merchantRaw: "TESCO",
         amount: { gte: -50.005, lte: -49.995 },
+        date: { not: null },
       },
+      orderBy: { date: "asc" },
     })
     expect(mockPrisma.transaction.update).toHaveBeenCalledWith({
       where: { id: "t1" },
       data: { date: restored },
+    })
+  })
+
+  it("picks the ImportRow with the closest date when multiple match", async () => {
+    const wrong = new Date("2026-03-31T00:00:00.000Z")  // bug-shifted from Apr 1
+    const apr1 = new Date("2026-04-01T00:00:00.000Z")
+    const apr15 = new Date("2026-04-15T00:00:00.000Z")
+    mockPrisma.transaction.findMany.mockResolvedValue([{
+      id: "t1",
+      date: wrong,
+      importBatchId: "b1",
+      merchantRaw: "TESCO",
+      totalAmount: -50,
+    }])
+    mockPrisma.importRow.findMany
+      .mockResolvedValueOnce([])  // first call: the date-not-null sweep
+      .mockResolvedValueOnce([
+        { id: "r2", date: apr15 },
+        { id: "r1", date: apr1 },
+      ])
+    await migrateDates(mockPrisma as never)
+    expect(mockPrisma.transaction.update).toHaveBeenCalledWith({
+      where: { id: "t1" },
+      data: { date: apr1 },
     })
   })
 
