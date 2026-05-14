@@ -25,18 +25,18 @@ export function parseDate(str: string, format: DateFormat): Date | null {
   if (format === "YYYY-MM-DD") {
     const m = s.match(ISO)
     if (!m) return null
-    const d = new Date(parseInt(m[1]), parseInt(m[2]) - 1, parseInt(m[3]))
+    const d = new Date(Date.UTC(parseInt(m[1]), parseInt(m[2]) - 1, parseInt(m[3])))
     return isNaN(d.getTime()) ? null : d
   }
   const m = s.match(DMY)
   if (!m) return null
   const year = m[3].length === 2 ? 2000 + parseInt(m[3]) : parseInt(m[3])
   if (format === "DD/MM/YYYY") {
-    const d = new Date(year, parseInt(m[2]) - 1, parseInt(m[1]))
+    const d = new Date(Date.UTC(year, parseInt(m[2]) - 1, parseInt(m[1])))
     return isNaN(d.getTime()) ? null : d
   }
   if (format === "MM/DD/YYYY") {
-    const d = new Date(year, parseInt(m[1]) - 1, parseInt(m[2]))
+    const d = new Date(Date.UTC(year, parseInt(m[1]) - 1, parseInt(m[2])))
     return isNaN(d.getTime()) ? null : d
   }
   return null

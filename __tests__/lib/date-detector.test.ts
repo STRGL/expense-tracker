@@ -34,28 +34,20 @@ describe("parseDate", () => {
     expect(parseDate("01/01/2026", null as unknown as DateFormat)).toBeNull()
   })
 
-  it("parses DD/MM/YYYY correctly", () => {
+  it("parses DD/MM/YYYY as UTC midnight", () => {
     const d = parseDate("15/03/2026", "DD/MM/YYYY")
     expect(d).toBeInstanceOf(Date)
-    expect(d!.getDate()).toBe(15)
-    expect(d!.getMonth()).toBe(2)
-    expect(d!.getFullYear()).toBe(2026)
+    expect(d!.toISOString()).toBe("2026-03-15T00:00:00.000Z")
   })
 
-  it("parses MM/DD/YYYY correctly", () => {
+  it("parses MM/DD/YYYY as UTC midnight", () => {
     const d = parseDate("03/15/2026", "MM/DD/YYYY")
-    expect(d).toBeInstanceOf(Date)
-    expect(d!.getDate()).toBe(15)
-    expect(d!.getMonth()).toBe(2)
-    expect(d!.getFullYear()).toBe(2026)
+    expect(d!.toISOString()).toBe("2026-03-15T00:00:00.000Z")
   })
 
-  it("parses YYYY-MM-DD correctly", () => {
+  it("parses YYYY-MM-DD as UTC midnight", () => {
     const d = parseDate("2026-03-15", "YYYY-MM-DD")
-    expect(d).toBeInstanceOf(Date)
-    expect(d!.getDate()).toBe(15)
-    expect(d!.getMonth()).toBe(2)
-    expect(d!.getFullYear()).toBe(2026)
+    expect(d!.toISOString()).toBe("2026-03-15T00:00:00.000Z")
   })
 
   it("returns null for invalid date string", () => {
