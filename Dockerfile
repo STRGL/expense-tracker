@@ -29,6 +29,11 @@ COPY next.config.mjs ./
 
 RUN npm ci --omit=dev
 
+# Copy migration scripts and their lib dependencies (run via tsx on container start)
+COPY tsconfig.json ./
+COPY lib ./lib/
+COPY scripts ./scripts/
+
 # Copy compiled app from builder
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
