@@ -46,7 +46,7 @@ export function computeBatchStats(
 
   const yearCounts: Record<number, number> = {}
   for (const d of dates) {
-    const y = d.getFullYear()
+    const y = d.getUTCFullYear()
     yearCounts[y] = (yearCounts[y] ?? 0) + 1
   }
   const dominantYear = Object.keys(yearCounts).length
@@ -65,7 +65,7 @@ export function scoreRow(
 
   if (!row.date || !(row.date instanceof Date) || isNaN(row.date.getTime())) {
     reasons.push("date_parse_failed")
-  } else if (batchStats.dominantYear !== null && row.date.getFullYear() !== batchStats.dominantYear) {
+  } else if (batchStats.dominantYear !== null && row.date.getUTCFullYear() !== batchStats.dominantYear) {
     reasons.push("date_wrong_year")
   }
 
