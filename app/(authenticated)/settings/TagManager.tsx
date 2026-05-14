@@ -91,7 +91,8 @@ export default function TagManager() {
   }
 
   function openCreate(parentId: string | null = null) {
-    setForm({ name: "", colour: "#6b7280", parentId })
+    const parent = parentId ? tree.find((t) => t.id === parentId) : null
+    setForm({ name: "", colour: parent?.colour ?? "#6b7280", parentId })
     setDialog({ mode: "create" })
     setError("")
   }

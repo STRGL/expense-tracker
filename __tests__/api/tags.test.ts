@@ -94,6 +94,50 @@ describe("POST /api/tags", () => {
     const res = await POST(req)
     expect(res.status).toBe(400)
   })
+
+  it("inherits the parent's colour when no colour is supplied for a subtag", async () => {
+    auth.mockResolvedValue(session)
+    prisma.tag.findUnique.mockResolvedValue({ colour: "#22c55e", parentId: null })
+    prisma.tag.create.mockResolvedValue({ id: "child1", name: "Milk", parentId: "t1", colour: "#22c55e" })
+    const req = new Request("http://localhost/api/tags", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "Milk", parentId: "t1" }),
+    })
+    await POST(req)
+    expect(prisma.tag.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ colour: "#22c55e", parentId: "t1" }) }),
+    )
+  })
+
+  it("uses the supplied colour even when a parent exists with a different one", async () => {
+    auth.mockResolvedValue(session)
+    prisma.tag.findUnique.mockResolvedValue({ colour: "#22c55e", parentId: null })
+    prisma.tag.create.mockResolvedValue({ id: "child1", name: "Milk", parentId: "t1", colour: "#ff0000" })
+    const req = new Request("http://localhost/api/tags", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "Milk", parentId: "t1", colour: "#ff0000" }),
+    })
+    await POST(req)
+    expect(prisma.tag.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ colour: "#ff0000" }) }),
+    )
+  })
+
+  it("falls back to the default grey when no colour and no parent", async () => {
+    auth.mockResolvedValue(session)
+    prisma.tag.create.mockResolvedValue({ id: "t3", name: "X", parentId: null, colour: "#6b7280" })
+    const req = new Request("http://localhost/api/tags", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: "X" }),
+    })
+    await POST(req)
+    expect(prisma.tag.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ colour: "#6b7280" }) }),
+    )
+  })
 })
 
 describe("PUT /api/tags/[id]", () => {

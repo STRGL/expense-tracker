@@ -27,8 +27,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Name is required" }, { status: 400 })
   }
 
+  let parent: { colour: string; parentId: string | null } | null = null
   if (parentId) {
-    const parent = await prisma.tag.findUnique({ where: { id: parentId } })
+    parent = await prisma.tag.findUnique({
+      where: { id: parentId },
+      select: { colour: true, parentId: true },
+    })
     if (!parent) return NextResponse.json({ error: "Parent tag not found" }, { status: 400 })
     if (parent.parentId) {
       return NextResponse.json({ error: "Maximum two levels of nesting" }, { status: 400 })
@@ -38,7 +42,7 @@ export async function POST(request: Request) {
   const tag = await prisma.tag.create({
     data: {
       name: name.trim(),
-      colour: colour ?? "#6b7280",
+      colour: colour ?? parent?.colour ?? "#6b7280",
       parentId: parentId ?? null,
       isShared: false,
       createdById: session.user.id,
