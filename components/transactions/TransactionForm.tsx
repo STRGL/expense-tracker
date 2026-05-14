@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import Fuse from "fuse.js"
 import { cn } from "@/lib/utils"
-import { toLocalISODate } from "@/lib/date"
+import { toLocalISODate, toCalendarDateInTZ } from "@/lib/date"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -46,7 +46,7 @@ export default function TransactionForm({ initial, currentUserId, onSaved, onCan
   const initialIsCredit = (initial?.totalAmount ?? 0) > 0
   const [transactionType, setTransactionType] = useState(initialIsCredit ? "credit" : "debit")
   const [form, setForm] = useState({
-    date: initial?.date ? toLocalISODate(new Date(initial.date)) : toLocalISODate(new Date()),
+    date: initial?.date ? toCalendarDateInTZ(initial.date, "UTC") : toLocalISODate(new Date()),
     merchantRaw: initial?.merchantRaw ?? "",
     merchantName: initial?.merchantName ?? "",
     totalAmount: initial?.totalAmount ? String(Math.abs(initial.totalAmount)) : "",

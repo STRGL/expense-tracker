@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { Search } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import TransactionDialog from "@/components/transactions/TransactionDialog"
-import { formatCalendarDate } from "@/lib/date"
+import { formatCalendarDate, toCalendarDateInTZ } from "@/lib/date"
 import type { TransactionListItem } from "@/types/api"
 import type { ChangeEvent, KeyboardEvent } from "react"
 
@@ -69,8 +69,10 @@ export default function SearchBar() {
 
   function viewInMonth(tx: TransactionListItem) {
     const d = new Date(tx.date)
-    const from = new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10)
-    const to = new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().slice(0, 10)
+    const year = d.getUTCFullYear()
+    const monthIdx = d.getUTCMonth()
+    const from = toCalendarDateInTZ(new Date(Date.UTC(year, monthIdx, 1)), "UTC")
+    const to = toCalendarDateInTZ(new Date(Date.UTC(year, monthIdx + 1, 0)), "UTC")
     setOpen(false)
     router.push(`/transactions?dateFrom=${from}&dateTo=${to}`)
   }

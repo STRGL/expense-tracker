@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import TransactionDialog from "@/components/transactions/TransactionDialog"
-import { formatCalendarDate } from "@/lib/date"
+import { formatCalendarDate, toCalendarDateInTZ } from "@/lib/date"
 import type { TransactionListItem } from "@/types/api"
 import type { TagWithChildren } from "@/lib/tag-utils"
 import type { FormEvent } from "react"
@@ -108,8 +108,10 @@ export default function SearchPage() {
 
   function viewInMonth(tx: TransactionListItem) {
     const d = new Date(tx.date)
-    const from = new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10)
-    const to = new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().slice(0, 10)
+    const year = d.getUTCFullYear()
+    const monthIdx = d.getUTCMonth()
+    const from = toCalendarDateInTZ(new Date(Date.UTC(year, monthIdx, 1)), "UTC")
+    const to = toCalendarDateInTZ(new Date(Date.UTC(year, monthIdx + 1, 0)), "UTC")
     router.push(`/transactions?dateFrom=${from}&dateTo=${to}`)
   }
 

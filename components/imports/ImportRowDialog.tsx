@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Badge } from "@/components/ui/badge"
 import type { ImportRow } from "@prisma/client"
 import type { TagWithChildren } from "@/lib/tag-utils"
+import { toCalendarDateInTZ } from "@/lib/date"
 
 interface FlatTag {
   id: string
@@ -27,7 +28,7 @@ interface Props {
 export default function ImportRowDialog({ row, batchId, onClose, onSaved }: Props) {
   const [form, setForm] = useState({
     merchantResolved: row.merchantResolved ?? "",
-    date: row.date ? new Date(row.date).toISOString().slice(0, 10) : "",
+    date: row.date ? toCalendarDateInTZ(row.date, "UTC") : "",
     amount: row.amount != null ? String(row.amount) : "",
     tagId: row.tagId ?? "",
     status: row.status ?? "pending",

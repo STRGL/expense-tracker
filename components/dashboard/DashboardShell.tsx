@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import Spinner from "@/components/ui/Spinner"
 import { Button } from "@/components/ui/button"
 import { getDefaultPeriod, computeDateRange, type Preset } from "@/lib/period-utils"
+import { toLocalISODate } from "@/lib/date"
 import PeriodSelector, { type DashboardPeriod } from "./PeriodSelector"
 import WidgetGrid from "./WidgetGrid"
 import SummaryCards from "./widgets/SummaryCards"
@@ -45,8 +46,11 @@ export default function DashboardShell() {
   }, [period.preset, period.year, period.month, period.customFrom, period.customTo])
 
   const { dateFrom, dateTo, label } = periodRange ?? { dateFrom: null as Date | null, dateTo: null as Date | null, label: "" }
-  const dateFromStr = dateFrom?.toISOString().slice(0, 10)
-  const dateToStr = dateTo?.toISOString().slice(0, 10)
+  // dateFrom/dateTo are locally-constructed Dates (from computeDateRange's `new Date(year, month, ...)`
+  // or `new Date(customTo + "T23:59:59")`). Their LOCAL components are the user's intended calendar
+  // date, so use toLocalISODate to extract them without TZ shift.
+  const dateFromStr = dateFrom ? toLocalISODate(dateFrom) : undefined
+  const dateToStr = dateTo ? toLocalISODate(dateTo) : undefined
   const lastFetchRef = useRef<string>("")
 
   useEffect(() => {

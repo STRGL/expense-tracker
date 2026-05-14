@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label"
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog"
-import { toLocalISODate } from "@/lib/date"
+import { toCalendarDateInTZ } from "@/lib/date"
 import type { TransactionDetail } from "./TransactionDialog"
 
 type FieldKey = "date" | "merchantName" | "totalAmount" | "notes" | "mySplitAmount"
@@ -26,7 +26,7 @@ interface Props {
 export default function SuggestChangeForm({ transaction, mySplit, onClose, onSubmitted }: Props) {
   const [unlocked, setUnlocked] = useState<Partial<Record<FieldKey, boolean>>>({})
   const [values, setValues] = useState<Record<FieldKey, string>>({
-    date: transaction.date ? toLocalISODate(new Date(transaction.date)) : "",
+    date: transaction.date ? toCalendarDateInTZ(transaction.date, "UTC") : "",
     merchantName: transaction.merchantName ?? "",
     totalAmount: String(transaction.totalAmount ?? ""),
     notes: transaction.notes ?? "",
@@ -48,7 +48,7 @@ export default function SuggestChangeForm({ transaction, mySplit, onClose, onSub
   ]
 
   const originalValues: Record<FieldKey, string> = {
-    date: transaction.date ? toLocalISODate(new Date(transaction.date)) : "",
+    date: transaction.date ? toCalendarDateInTZ(transaction.date, "UTC") : "",
     merchantName: transaction.merchantName ?? "",
     totalAmount: String(transaction.totalAmount ?? ""),
     notes: transaction.notes ?? "",
