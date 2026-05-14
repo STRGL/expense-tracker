@@ -424,7 +424,7 @@ export default function TransactionList({ onReload: _onReload }: Props = {}) {
                           onValueChange={(v) => void updateRowTag(tx.id, v === "none" ? null : v)}
                         >
                           <SelectTrigger
-                            className="h-7 border-0 bg-transparent hover:bg-muted/50 px-1.5 shadow-none [&>svg]:opacity-40 hover:[&>svg]:opacity-100 w-auto min-w-0"
+                            className="!h-6 border-0 bg-transparent hover:bg-muted/50 !py-0 !px-1.5 text-xs shadow-none [&>svg]:opacity-40 hover:[&>svg]:opacity-100 w-auto min-w-0"
                           >
                             <SelectValue placeholder={<span className="text-xs text-muted-foreground">Untagged</span>}>
                               {tx.myTag ? (
