@@ -13,6 +13,7 @@ import TransactionDialog from "@/components/transactions/TransactionDialog"
 import BulkActionBar from "@/components/ui/BulkActionBar"
 import type { TransactionListItem, TagSummary } from "@/types/api"
 import { formatCalendarDate } from "@/lib/date"
+import { isPendingSplit } from "@/lib/split-calculator"
 import { apiFetch } from "@/lib/api-client"
 
 interface FlatTag extends TagSummary {
@@ -354,7 +355,7 @@ export default function TransactionList({ onReload: _onReload }: Props = {}) {
                       </td>
                       <td className="px-3 py-2.5 font-medium max-w-[200px] truncate">
                         {tx.merchantName}
-                        {tx.splitMethod === "proportional" && (
+                        {isPendingSplit({ splitMethod: tx.splitMethod, amount: tx.myAmount }) && (
                           <span className="ml-1 text-xs text-muted-foreground font-normal italic">(Pending)</span>
                         )}
                       </td>

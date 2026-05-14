@@ -1,4 +1,29 @@
-import { calculateSplits, validateSpecifiedSplits, SplitResult, ProportionalResult } from "@/lib/split-calculator"
+import {
+  calculateSplits,
+  validateSpecifiedSplits,
+  isPendingSplit,
+  SplitResult,
+  ProportionalResult,
+} from "@/lib/split-calculator"
+
+describe("isPendingSplit", () => {
+  it("returns true for a proportional split with zero amount (waiting for wage data)", () => {
+    expect(isPendingSplit({ splitMethod: "proportional", amount: 0 })).toBe(true)
+  })
+
+  it("returns false for a proportional split with computed amount", () => {
+    expect(isPendingSplit({ splitMethod: "proportional", amount: 42.5 })).toBe(false)
+  })
+
+  it("returns false for a proportional split with negative computed amount", () => {
+    expect(isPendingSplit({ splitMethod: "proportional", amount: -42.5 })).toBe(false)
+  })
+
+  it("returns false for non-proportional methods regardless of amount", () => {
+    expect(isPendingSplit({ splitMethod: "equal", amount: 0 })).toBe(false)
+    expect(isPendingSplit({ splitMethod: "specified", amount: 0 })).toBe(false)
+  })
+})
 
 describe("calculateSplits — equal", () => {
   it("splits evenly between two users", () => {

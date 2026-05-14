@@ -17,6 +17,7 @@ import LineItemForm from "./LineItemForm"
 import type { TransactionListItem } from "@/types/api"
 import type { TagWithChildren } from "@/lib/tag-utils"
 import { formatCalendarDate } from "@/lib/date"
+import { isPendingSplit } from "@/lib/split-calculator"
 
 function formatAmount(amount: number) {
   return new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(amount)
@@ -251,7 +252,7 @@ export default function TransactionDialog({ transaction, onClose, onSaved }: Pro
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {detail.merchantName}
-            {detail.splits.some(s => s.splitMethod === "proportional") && (
+            {detail.splits.some(isPendingSplit) && (
               <span className="text-sm font-normal italic text-muted-foreground">(Pending)</span>
             )}
             {!isOwner && (

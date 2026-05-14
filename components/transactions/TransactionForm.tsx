@@ -89,17 +89,20 @@ export default function TransactionForm({ initial, currentUserId, onSaved, onCan
   }, [isEdit, currentUserId])
 
   useEffect(() => {
-    if (isEdit) return
     fetch("/api/profile")
       .then(r => r.json())
       .then((data: { hasAcknowledgedSplitWarning?: boolean }) => {
         if (data.hasAcknowledgedSplitWarning) setSplitWarningAcknowledged(true)
       })
       .catch(() => setSplitWarningAcknowledged(true))
-  }, [isEdit])
+  }, [])
 
   function handleMerchantChange(value: string) {
-    setForm((f) => ({ ...f, merchantRaw: value, merchantName: value }))
+    setForm((f) => ({
+      ...f,
+      merchantName: value,
+      merchantRaw: initial?.merchantRaw ? f.merchantRaw : value,
+    }))
     if (fuseRef.current && value.length > 1) {
       const results = fuseRef.current.search(value).slice(0, 5)
       setSuggestions(results.map((r) => r.item))
@@ -219,6 +222,11 @@ export default function TransactionForm({ initial, currentUserId, onSaved, onCan
           onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
           autoComplete="off"
         />
+        {initial?.merchantRaw && initial.merchantRaw !== form.merchantName && (
+          <p className="text-xs text-muted-foreground font-mono pl-1">
+            Original: <span aria-label="Original merchant name">{initial.merchantRaw}</span>
+          </p>
+        )}
         {showSuggestions && (
           <div className="absolute z-10 w-full mt-0.5 bg-background border rounded-md shadow-md">
             {suggestions.map((alias) => (

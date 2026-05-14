@@ -57,3 +57,7 @@ export function validateSpecifiedSplits(
   const sum = splits.reduce((s, sp) => s + sp.amount, 0)
   return Math.abs(sum - totalAmount) < 0.011
 }
+
+export function isPendingSplit(split: { splitMethod: string; amount: number }): boolean {
+  return split.splitMethod === "proportional" && split.amount === 0
+}
