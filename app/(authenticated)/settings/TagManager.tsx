@@ -13,6 +13,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog"
+import { apiFetch, ApiError } from "@/lib/api-client"
 
 const PRESET_COLOURS = [
   "#ef4444", "#f97316", "#eab308", "#22c55e",
@@ -81,9 +82,12 @@ export default function TagManager() {
   useEffect(() => { void loadTags() }, [])
 
   async function loadTags() {
-    const res = await fetch("/api/tags")
-    const data = await res.json()
-    setTree(data)
+    try {
+      const data = await apiFetch<TagParent[]>("/api/tags")
+      setTree(data)
+    } catch {
+      // silently fail — tree stays at previous state
+    }
   }
 
   function openCreate(parentId: string | null = null) {
@@ -104,16 +108,19 @@ export default function TagManager() {
     setError("")
     const url = dialog.mode === "edit" ? `/api/tags/${dialog.tag.id}` : "/api/tags"
     const method = dialog.mode === "edit" ? "PUT" : "POST"
-    const res = await fetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    })
-    const data = await res.json()
-    setSaving(false)
-    if (!res.ok) { setError(data.error ?? "Failed"); return }
-    setDialog(null)
-    loadTags()
+    try {
+      await apiFetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      })
+      setDialog(null)
+      loadTags()
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Failed")
+    } finally {
+      setSaving(false)
+    }
   }
 
   async function handleDelete(id: string) {

@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog"
+import { apiFetch, ApiError } from "@/lib/api-client"
 
 interface AliasRow {
   id: string
@@ -36,8 +37,12 @@ export default function AliasManager() {
   useEffect(() => { void load() }, [])
 
   async function load() {
-    const res = await fetch("/api/aliases")
-    setAliases(await res.json())
+    try {
+      const data = await apiFetch<AliasRow[]>("/api/aliases")
+      setAliases(data)
+    } catch {
+      // silently fail — list stays at previous state
+    }
   }
 
   function openCreate() {
@@ -58,16 +63,19 @@ export default function AliasManager() {
     setError("")
     const url = dialog.mode === "edit" ? `/api/aliases/${dialog.alias.id}` : "/api/aliases"
     const method = dialog.mode === "edit" ? "PUT" : "POST"
-    const res = await fetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    })
-    const data = await res.json()
-    setSaving(false)
-    if (!res.ok) { setError(data.error ?? "Failed"); return }
-    setDialog(null)
-    load()
+    try {
+      await apiFetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      })
+      setDialog(null)
+      load()
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Failed")
+    } finally {
+      setSaving(false)
+    }
   }
 
   async function handleDelete(id: string) {

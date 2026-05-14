@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { apiFetch, ApiError } from "@/lib/api-client"
 
 export default function SetupForm() {
   const router = useRouter()
@@ -29,21 +30,18 @@ export default function SetupForm() {
       return
     }
 
-    const res = await fetch("/api/setup", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password }),
-    })
-
-    const body = await res.json()
-    setLoading(false)
-
-    if (!res.ok) {
-      setError(body.error ?? "Setup failed")
-      return
+    try {
+      await apiFetch("/api/setup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password }),
+      })
+      router.push("/login")
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Setup failed")
+    } finally {
+      setLoading(false)
     }
-
-    router.push("/login")
   }
 
   return (

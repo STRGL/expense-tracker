@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Bell } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { apiFetch } from "@/lib/api-client"
 
 export default function NotificationBell() {
   const [unread, setUnread] = useState(0)
@@ -12,9 +13,8 @@ export default function NotificationBell() {
     let active = true
     async function poll() {
       try {
-        const res = await fetch("/api/notifications/count")
-        if (res.ok && active) {
-          const data = await res.json()
+        const data = await apiFetch<{ unread: number }>("/api/notifications/count")
+        if (active) {
           setUnread(data.unread)
         }
       } catch {

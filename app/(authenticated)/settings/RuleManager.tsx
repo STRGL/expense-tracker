@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog"
+import { apiFetch, ApiError } from "@/lib/api-client"
 
 interface TagOption {
   id: string
@@ -59,8 +60,12 @@ export default function RuleManager() {
   }, [])
 
   async function load() {
-    const res = await fetch("/api/rules")
-    setRules(await res.json())
+    try {
+      const data = await apiFetch<RuleRow[]>("/api/rules")
+      setRules(data)
+    } catch {
+      // silently fail — list stays at previous state
+    }
   }
 
   function openCreate() {
@@ -81,16 +86,19 @@ export default function RuleManager() {
     setError("")
     const url = dialog.mode === "edit" ? `/api/rules/${dialog.rule.id}` : "/api/rules"
     const method = dialog.mode === "edit" ? "PUT" : "POST"
-    const res = await fetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    })
-    const data = await res.json()
-    setSaving(false)
-    if (!res.ok) { setError(data.error ?? "Failed"); return }
-    setDialog(null)
-    load()
+    try {
+      await apiFetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      })
+      setDialog(null)
+      load()
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Failed")
+    } finally {
+      setSaving(false)
+    }
   }
 
   async function handleDelete(id: string) {

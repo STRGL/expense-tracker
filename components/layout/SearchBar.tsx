@@ -8,6 +8,7 @@ import TransactionDialog from "@/components/transactions/TransactionDialog"
 import { formatCalendarDate, toCalendarDateInTZ } from "@/lib/date"
 import type { TransactionListItem } from "@/types/api"
 import type { ChangeEvent, KeyboardEvent } from "react"
+import { apiFetch } from "@/lib/api-client"
 
 function formatAmount(n: number) {
   return new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(n)
@@ -29,8 +30,7 @@ export default function SearchBar() {
     timerRef.current = setTimeout(async () => {
       setLoading(true)
       try {
-        const res = await fetch(`/api/search?q=${encodeURIComponent(q)}&limit=8`)
-        const data = await res.json()
+        const data = await apiFetch<TransactionListItem[]>(`/api/search?q=${encodeURIComponent(q)}&limit=8`)
         if (Array.isArray(data)) {
           setResults(data)
           setOpen(true)

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import Spinner from "@/components/ui/Spinner"
 import NotificationItem, { type NotificationData } from "./NotificationItem"
+import { apiFetch } from "@/lib/api-client"
 
 export default function NotificationList() {
   const [notifications, setNotifications] = useState<NotificationData[]>([])
@@ -13,10 +14,14 @@ export default function NotificationList() {
     // Wrap in Promise to ensure it's not synchronous within the effect
     await Promise.resolve()
     setLoading(true)
-    const res = await fetch("/api/notifications")
-    const data = await res.json()
-    setNotifications(data)
-    setLoading(false)
+    try {
+      const data = await apiFetch<NotificationData[]>("/api/notifications")
+      setNotifications(data)
+    } catch {
+      // silently fail — list stays at previous state
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
   useEffect(() => {

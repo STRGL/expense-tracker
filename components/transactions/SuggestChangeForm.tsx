@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dialog"
 import { toCalendarDateInTZ } from "@/lib/date"
 import type { TransactionDetail } from "./TransactionDialog"
+import { apiFetch, ApiError } from "@/lib/api-client"
 
 type FieldKey = "date" | "merchantName" | "totalAmount" | "notes" | "mySplitAmount"
 
@@ -70,20 +71,18 @@ export default function SuggestChangeForm({ transaction, mySplit, onClose, onSub
     }
 
     setSubmitting(true)
-    const res = await fetch(`/api/transactions/${transaction.id}/suggestions`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ suggestedChanges: diff }),
-    })
-    const data = await res.json()
-    setSubmitting(false)
-
-    if (!res.ok) {
-      setError(data.error ?? "Failed to submit suggestion.")
-      return
+    try {
+      await apiFetch(`/api/transactions/${transaction.id}/suggestions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ suggestedChanges: diff }),
+      })
+      onSubmitted?.()
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Failed to submit suggestion.")
+    } finally {
+      setSubmitting(false)
     }
-
-    onSubmitted?.()
   }
 
   return (

@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toLocalISODate } from "@/lib/date"
 import SplitPanel, { type Split } from "./SplitPanel"
+import { apiFetch, ApiError } from "@/lib/api-client"
 
 interface Props {
   parentId: string
@@ -50,23 +51,26 @@ export default function LineItemForm({
       amount: parentTotal < 0 ? -Math.abs(s.amount) : Math.abs(s.amount),
     }))
 
-    const res = await fetch("/api/transactions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        date: toLocalISODate(new Date()),
-        merchantRaw: name.trim(),
-        merchantName: name.trim(),
-        totalAmount: signedAmount,
-        parentId,
-        distributeCost,
-        splits: distributeCost ? [] : signedSplits,
-      }),
-    })
-    const data = await res.json()
-    setSaving(false)
-    if (!res.ok) { setError(data.error ?? "Failed to save."); return }
-    onSaved()
+    try {
+      await apiFetch("/api/transactions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          date: toLocalISODate(new Date()),
+          merchantRaw: name.trim(),
+          merchantName: name.trim(),
+          totalAmount: signedAmount,
+          parentId,
+          distributeCost,
+          splits: distributeCost ? [] : signedSplits,
+        }),
+      })
+      onSaved()
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Failed to save.")
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (

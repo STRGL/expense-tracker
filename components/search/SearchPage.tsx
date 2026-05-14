@@ -12,6 +12,7 @@ import { formatCalendarDate, toCalendarDateInTZ } from "@/lib/date"
 import type { TransactionListItem } from "@/types/api"
 import type { TagWithChildren } from "@/lib/tag-utils"
 import type { FormEvent } from "react"
+import { apiFetch } from "@/lib/api-client"
 
 interface FlatTag {
   id: string
@@ -74,8 +75,7 @@ export default function SearchPage() {
       if (f.maxAmount) params.set("maxAmount", f.maxAmount)
       if (f.source) params.set("source", f.source)
       if (f.split) params.set("split", f.split)
-      const res = await fetch(`/api/search?${params}`)
-      const data = await res.json()
+      const data = await apiFetch<TransactionListItem[]>(`/api/search?${params}`)
       setResults(Array.isArray(data) ? data : [])
     } catch {
       setResults([])

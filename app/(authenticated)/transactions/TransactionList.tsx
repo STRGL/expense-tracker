@@ -13,6 +13,7 @@ import TransactionDialog from "@/components/transactions/TransactionDialog"
 import BulkActionBar from "@/components/ui/BulkActionBar"
 import type { TransactionListItem, TagSummary } from "@/types/api"
 import { formatCalendarDate } from "@/lib/date"
+import { apiFetch } from "@/lib/api-client"
 
 interface FlatTag extends TagSummary {
   parentId: string | null
@@ -88,12 +89,17 @@ export default function TransactionList({ onReload: _onReload }: Props = {}) {
         params.set(k, String(v))
       }
     })
-    const res = await fetch(`/api/transactions?${params}`)
-    const data = await res.json()
-    setTransactions(data.transactions || [])
-    setTotal(data.total || 0)
-    setLoading(false)
-    setSelectedIds(new Set())
+    try {
+      const data = await apiFetch<{ transactions?: TransactionListItem[]; total?: number }>(`/api/transactions?${params}`)
+      setTransactions(data.transactions || [])
+      setTotal(data.total || 0)
+    } catch {
+      setTransactions([])
+      setTotal(0)
+    } finally {
+      setLoading(false)
+      setSelectedIds(new Set())
+    }
   }, [filters])
 
   useEffect(() => {
@@ -178,10 +184,11 @@ export default function TransactionList({ onReload: _onReload }: Props = {}) {
     }
     if (!childrenMap[txId]) {
       setLoadingChildren(prev => new Set(prev).add(txId))
-      const res = await fetch(`/api/transactions/${txId}`)
-      if (res.ok) {
-        const data = await res.json()
+      try {
+        const data = await apiFetch<{ children?: TransactionDetail[] }>(`/api/transactions/${txId}`)
         setChildrenMap(prev => ({ ...prev, [txId]: data.children ?? [] }))
+      } catch {
+        // silently fail — children stay unloaded
       }
       setLoadingChildren(prev => { const n = new Set(prev); n.delete(txId); return n })
     }

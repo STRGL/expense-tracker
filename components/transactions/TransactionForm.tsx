@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator"
 import SplitPanel, { type Split } from "./SplitPanel"
 import SplitWarningModal from "./SplitWarningModal"
 import type { FormEvent } from "react"
+import { apiFetch, ApiError } from "@/lib/api-client"
 
 interface TransactionInitial {
   id?: string
@@ -145,25 +146,23 @@ export default function TransactionForm({ initial, currentUserId, onSaved, onCan
       amount: transactionType === "debit" ? -Math.abs(s.amount) : Math.abs(s.amount),
     }))
 
-    const res = await fetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...form,
-        totalAmount: signedTotal,
-        splits: signedSplits,
-        ...(isEdit && { paymentFromUserId }),
-      }),
-    })
-    const data = await res.json()
-    setSaving(false)
-
-    if (!res.ok) {
-      setError(data.error ?? "Failed to save transaction.")
-      return
+    try {
+      await apiFetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...form,
+          totalAmount: signedTotal,
+          splits: signedSplits,
+          ...(isEdit && { paymentFromUserId }),
+        }),
+      })
+      onSaved?.()
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Failed to save transaction.")
+    } finally {
+      setSaving(false)
     }
-
-    onSaved?.()
   }
 
   return (

@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import type { ImportRow } from "@prisma/client"
 import type { TagWithChildren } from "@/lib/tag-utils"
 import { toCalendarDateInTZ } from "@/lib/date"
+import { apiFetch, ApiError } from "@/lib/api-client"
 
 interface FlatTag {
   id: string
@@ -49,7 +50,7 @@ export default function ImportRowDialog({ row, batchId, onClose, onSaved }: Prop
     setSaving(true)
     setError("")
     try {
-      const res = await fetch(`/api/imports/${batchId}/rows/${row.id}`, {
+      await apiFetch(`/api/imports/${batchId}/rows/${row.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -60,18 +61,13 @@ export default function ImportRowDialog({ row, batchId, onClose, onSaved }: Prop
           status: form.status,
         }),
       })
-      
-      const contentType = res.headers.get("content-type")
-      const isJson = contentType && contentType.includes("application/json")
-      const data = isJson ? await res.json() : null
-
-      if (!res.ok) {
-        setError(data?.error ?? `Server error (${res.status}). Please try again.`)
-        return
-      }
       onSaved?.()
     } catch (err) {
-      setError("Network error. Please check your connection.")
+      if (err instanceof ApiError) {
+        setError(err.message || `Server error (${err.status}). Please try again.`)
+      } else {
+        setError("Network error. Please check your connection.")
+      }
     } finally {
       setSaving(false)
     }

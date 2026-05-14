@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { detectDateFormat } from "@/lib/date-detector"
+import { apiFetch, ApiError } from "@/lib/api-client"
 
 type CSVRow = Record<string, string>
 
@@ -69,23 +70,26 @@ export default function UploadForm() {
       return
     }
     setUploading(true)
-    const res = await fetch("/api/imports", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ 
-        csvText, 
-        dateColumn, 
-        merchantColumn, 
-        amountColumn, 
-        creditColumn: creditColumn || null, 
-        invertSigns,
-        bankName: bankName || null 
-      }),
-    })
-    const data = await res.json()
-    setUploading(false)
-    if (!res.ok) { setError(data.error ?? "Upload failed."); return }
-    router.push(`/imports/${data.id}`)
+    try {
+      const data = await apiFetch<{ id: string }>("/api/imports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          csvText,
+          dateColumn,
+          merchantColumn,
+          amountColumn,
+          creditColumn: creditColumn || null,
+          invertSigns,
+          bankName: bankName || null
+        }),
+      })
+      router.push(`/imports/${data.id}`)
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Upload failed.")
+    } finally {
+      setUploading(false)
+    }
   }
 
   return (

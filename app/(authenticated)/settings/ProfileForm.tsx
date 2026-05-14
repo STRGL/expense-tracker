@@ -10,6 +10,7 @@ import Spinner from "@/components/ui/Spinner"
 import { cn } from "@/lib/utils"
 import { ACCENT_THEMES, ACCENT_SWATCHES } from "@/lib/accent-themes"
 import type { AccentThemeKey } from "@/lib/accent-themes"
+import { apiFetch, ApiError } from "@/lib/api-client"
 
 interface Profile {
   id: string
@@ -58,19 +59,19 @@ export default function ProfileForm() {
     if (password) body.password = password as string
     if (wage !== "") body.wage = wage === "" ? null : Number(wage)
 
-    const res = await fetch("/api/profile", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    })
-    const data = await res.json()
-    setSaving(false)
-    if (res.ok) {
+    try {
+      const data = await apiFetch<Profile>("/api/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      })
       setProfile(data)
       setMessage("Profile updated.")
       ;(e.target as HTMLFormElement).reset()
-    } else {
-      setMessage(data.error ?? "Update failed.")
+    } catch (err) {
+      setMessage(err instanceof ApiError ? err.message : "Update failed.")
+    } finally {
+      setSaving(false)
     }
   }
 
